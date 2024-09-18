@@ -1,6 +1,6 @@
 # SFWRENG 3K04 Pacemaker Project
 
-**Team**
+**Team**<br />
 Aric Azim<br />
 Hainz Langanani<br />
 Lisa Vong<br />
