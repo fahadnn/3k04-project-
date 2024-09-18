@@ -1,8 +1,8 @@
 # SFWRENG 3K04 Pacemaker Project
 
 **Team**
-Aric Azim
-Hainz Langanani
-Lisa Vong
-Nuha Fahad
-Owen Paulley
+Aric Azim<br />
+Hainz Langanani<br />
+Lisa Vong<br />
+Nuha Fahad<br />
+Owen Paulley<br />
