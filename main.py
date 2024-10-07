@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 
 class pacemaker(tk.Tk):
     def __init__(self):
