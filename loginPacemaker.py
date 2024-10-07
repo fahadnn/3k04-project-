@@ -8,7 +8,7 @@ def change_language(language):
     print(f"Langauge selected: {language}")
 
 def show_language_menu(event):
-    language_menu.post(event.x_root, event.y_root) #what is happening here?
+    language_menu.post(event.x_root, event.y_root) 
 
 #Labels and Entries
 
@@ -27,7 +27,7 @@ language_button.bind("<Button-1>", show_language_menu)
 
 #Dropdown (popup) menu
 
-language_menu = tkinter.Menu(window, tearoff=0) #what is happening here?
+language_menu = tkinter.Menu(window, tearoff=0) 
 languages = ["English", "Danish", "Dutch", "French", "German", "Spanish", "Italian", "Swedish"]
 
 for lang in languages:
