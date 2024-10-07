@@ -1,6 +1,6 @@
 import sqlite3
 
-def createDB(dbName = "users.db"):
+def create_db(dbName = "users.db"):
     conn = sqlite3.connect(dbName)
     cursor = conn.cursor()
     cursor.execute("""
@@ -12,7 +12,7 @@ def createDB(dbName = "users.db"):
     conn.commit()
     conn.close()
     
-def registerUser(username, password):
+def register_user(username, password):
     conn = sqlite3.connect("users.db")
     cursor = conn.cursor()
     
