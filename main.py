@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from user_db import createDB, registerUser
+from userDB import createDB, registerUser
 
 class pacemaker(tk.Tk):
     def __init__(self):

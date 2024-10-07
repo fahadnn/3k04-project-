@@ -21,8 +21,8 @@ def registerUser(username, password):
         conn.close()
         return False 
     
-    cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)",
-                   (username, password))
+    cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
+    
     conn.commit()
     conn.close()
     return True
