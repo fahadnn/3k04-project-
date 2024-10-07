@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from userDB import createDB, registerUser
+from userDB import createDB, register_user
 
 class pacemaker(tk.Tk):
     def __init__(self):
@@ -10,47 +10,47 @@ class pacemaker(tk.Tk):
         
         createDB()
         
-        self.currentFrame = None
-        self.switchFrame(loginFrame)
+        self.current_frame = None
+        self.switch_frame(login_frame)
     
-    def switchFrame(self, frame):
-        if self.currentFrame is not None:
-            self.currentFrame.destroy()
+    def switch_frame(self, frame):
+        if self.current_frame is not None:
+            self.current_frame.destroy()
             
-        self.currentFrame = frame(self)
-        self.currentFrame.pack(fill = "both", expand = True)
+        self.current_frame = frame(self)
+        self.current_frame.pack(fill = "both", expand = True)
                 
-class registrationFrame(ttk.Frame):
+class registration_frame(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
         ttk.Label(self, text = "Registration").pack()
         
         ttk.Label(self, text = "Username").pack()
-        self.usernameEntry = ttk.Entry(self)
-        self.usernameEntry.pack()
+        self.username_reg_entry = ttk.Entry(self)
+        self.username_reg_entry.pack()
         
         ttk.Label(self, text = "Password").pack()
-        self.passwordEntry = ttk.Entry(self)
-        self.passwordEntry.pack()
+        self.password_reg_entry = ttk.Entry(self)
+        self.password_reg_entry.pack()
         
         ttk.Label(self, text = "Re-enter Password").pack()
-        self.passwordReentry = ttk.Entry(self)
-        self.passwordReentry.pack()
+        self.password_reg_reentry = ttk.Entry(self)
+        self.password_reg_reentry.pack()
         
-        self.registerButton = ttk.Button(self, text = "Register", command = self.registerUser)
-        self.registerButton.pack()
+        self.register_button = ttk.Button(self, text = "Register", command = self.register_user)
+        self.register_button.pack()
         
-    def registerUser(self):
-        username = self.usernameEntry.get()
-        password = self.passwordEntry.get()
+    def register_user(self):
+        username = self.username_reg_entry.get()
+        password = self.password_reg_entry.get()
         
-        if registerUser(username, password):
+        if register_user(username, password):
             messagebox.showinfo("Success", "Registration successful!")
             self.clear_form()
         else:
             messagebox.showerror("Error", "Username already exists!")
 
-class loginFrame (ttk.Frame):
+class login_frame (ttk.Frame):
     def __init__(self,master):
         super().__init__(master)
         
