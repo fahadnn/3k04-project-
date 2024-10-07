@@ -8,7 +8,7 @@ class pacemaker(tk.Tk):
         self.title ("Pacemaker")
         self.geometry ("700x600")
         
-        createDB()
+        create_db()
         
         self.current_frame = None
         self.switch_frame(login_frame)
