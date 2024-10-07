@@ -1,11 +1,14 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
+from user_db import createDB, registerUser
 
 class pacemaker(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title ("Pacemaker")
         self.geometry ("700x600")
+        
+        createDB()
         
         self.currentFrame = None
         self.switchFrame(registrationFrame)
@@ -34,9 +37,18 @@ class registrationFrame(ttk.Frame):
         self.passwordReentry = ttk.Entry(self)
         self.passwordReentry.pack()
         
-        self.registerButton = ttk.Button(self, text = "Register", command = None)
+        self.registerButton = ttk.Button(self, text = "Register", command = self.registerUser)
         self.registerButton.pack()
         
+    def registerUser(self):
+        username = self.usernameEntry.get()
+        password = self.passwordEntry.get()
+        
+        if registerUser(username, password):
+            messagebox.showinfo("Success", "Registration successful!")
+            self.clear_form()
+        else:
+            messagebox.showerror("Error", "Username already exists!")
 
 if __name__ == "__main__":
     app = pacemaker()
