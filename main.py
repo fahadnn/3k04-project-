@@ -31,11 +31,11 @@ class registration_frame(ttk.Frame):
         self.username_reg_entry.pack()
         
         ttk.Label(self, text = "Password").pack()
-        self.password_reg_entry = ttk.Entry(self)
+        self.password_reg_entry = ttk.Entry(self, show = "*")
         self.password_reg_entry.pack()
         
         ttk.Label(self, text = "Re-enter Password").pack()
-        self.password_reg_reentry = ttk.Entry(self)
+        self.password_reg_reentry = ttk.Entry(self, show = "*")
         self.password_reg_reentry.pack()
         
         self.register_button = ttk.Button(self, text = "Register", command = self.register_user)
