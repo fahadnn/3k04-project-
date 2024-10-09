@@ -1,5 +1,6 @@
+import string
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk
 from userDB import create_db, register_user
 
 class pacemaker(tk.Tk):
@@ -42,17 +43,53 @@ class registration_frame(ttk.Frame):
         
         self.reg_status = ttk.Label(self, text = " ")
         self.reg_status.pack()
-        
+    
     def register_user(self):
         username = self.username_reg_entry.get()
         password = self.password_reg_entry.get()
+        password_reentry = self.password_reg_reentry.get()
         
+        error_message = self.validate_registration(username, password, password_reentry)
+        if error_message:
+            self.reg_status.config(text = error_message)
+            return
+                   
         if register_user(username, password):
-            self.reg_status.config(text = "Success, User Registered!")
-            self.master.switch_frame(login_frame)
+            self.reg_status.config(text = "Success, user registered!")
             self.clear_form()
+            self.master.switch_frame(login_frame)
         else:
-            self.reg_status.config(text = "Error, Username already exists!")
+            self.reg_status.config(text = "Error, username already exists!")
+            
+    def validate_registration(self, username, password, password_reentry):
+        if len(username) == 0:
+             return "Error, username cannot be empty!"
+         
+        if any(char.isspace() for char in username):
+             return "Error, username cannot contain whitespaces!"
+        
+        if len(password) < 8:
+            return "Error, password must be at least 8 characters long!"
+        
+        if not any(char.isupper() for char in password) or not any(char.islower() for char in password):
+            return "Error, password must contain at least one uppercase and lowercase letter!"
+        
+        if not any(char in string.punctuation for char in password):
+            return "Error, password must contain at least one special character: !\"#$%&'()*+,-./:;<=>?@[\]^_{|}~`"
+        
+        if any(char.isspace() for char in password):
+            return "Error, password cannot contain whitespaces!"
+        
+        if password != password_reentry:
+            return "Error, passwords do not match!"
+
+        return None
+            
+    def clear_form(self):
+        self.username_reg_entry.delete(0, tk.END)
+        self.password_reg_entry.delete(0, tk.END)
+        self.password_reg_reentry.delete(0, tk.END)
+                        
 
 class login_frame (ttk.Frame):
     def __init__(self,master):
