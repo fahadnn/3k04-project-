@@ -84,35 +84,6 @@ class login_frame (ttk.Frame):
         
         self.password_entry = ttk.Entry(self)
         self.password_entry.grid(row=4, column=0, columnspan=2,pady=10)
-        
-       
-        
-        
-        # def login_user(self):
-        #     username = self.username_entry.get()
-        #     password = self.password_entry.get()
-            
-        #     if login_user(username, password):
-        #         messagebox.showinfo("Success", "Login successful!")
-        #         self.clear_form()
-        #     else:
-        #         messagebox.showerror("Error", "Username already exists!")
-            
-        # def register_user(self):
-        #     username = self.username_entry.get()
-        #     password = self.password_entry.get()
-            
-        #     if register_user(username, password):
-        #         messagebox.showinfo("Success", "Registration successful!")
-        #         self.clear_form()
-        #     else:
-        #         messagebox.showerror("Error", "Username already exists!")
-                
-
-#1234567
-#hi
-#test
-
             
 if __name__ == "__main__":
     app = pacemaker()
