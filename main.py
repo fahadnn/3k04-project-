@@ -40,15 +40,19 @@ class registration_frame(ttk.Frame):
         self.register_button = ttk.Button(self, text = "Register", command = self.register_user)
         self.register_button.pack()
         
+        self.reg_status = ttk.Label(self, text = " ")
+        self.reg_status.pack()
+        
     def register_user(self):
         username = self.username_reg_entry.get()
         password = self.password_reg_entry.get()
         
         if register_user(username, password):
-            messagebox.showinfo("Success", "Registration successful!")
+            self.reg_status.config(text = "Success, User Registered!")
+            self.master.switch_frame(login_frame)
             self.clear_form()
         else:
-            messagebox.showerror("Error", "Username already exists!")
+            self.reg_status.config(text = "Error, Username already exists!")
 
 class login_frame (ttk.Frame):
     def __init__(self,master):
