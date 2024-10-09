@@ -1,7 +1,7 @@
 import string
 import tkinter as tk
-from tkinter import ttk
-from userDB import create_db, register_user
+from tkinter import ttk, messagebox
+from userDB import create_db, register_user, verify_user
 
 class pacemaker(tk.Tk):
     def __init__(self):
@@ -94,12 +94,6 @@ class registration_frame(ttk.Frame):
 class login_frame (ttk.Frame):
     def __init__(self,master):
         super().__init__(master)
-        
-        def change_language(language):
-            print(f"Langauge selected: {language}")
-
-        def show_language_menu(event):
-            language_menu.post(event.x_root, event.y_root)
             
         ttk.Label(self, text = "Welcome to DCM User Interface for Pacemaker").grid(row=0, column=0, pady=10, padx=(0,20), sticky="w")
         ttk.Label(self, text = "Username").grid(row=1, column=0,columnspan=2, pady=10)
@@ -111,13 +105,13 @@ class login_frame (ttk.Frame):
         for lang in languages:
             language_menu.add_command(label=lang, command=lambda l=lang: change_language(l))
         
-        self.login_button = ttk.Button(self, text = "Login", command = None)
+        self.login_button = ttk.Button(self, text = "Login", command = self.login_user)
         self.login_button.grid(row=5, column=0, columnspan=1, pady=20)
         
         self.register_button = ttk.Button(self, text = "Register", command =lambda: master.switch_frame(registration_frame))
         self.register_button.grid(row=5, column=1, columnspan=1, pady=20)
         
-        self.language_button = ttk.Button(self, text = "Login", command = self.bind("<Button-1>", show_language_menu))
+        self.language_button = ttk.Button(self, text = "Login", command = self.bind("<Button-1>", language_menu))
         self.language_button.grid(row=0, column=1, padx=20, pady=10, sticky="e")
     
         self.username_entry = ttk.Entry(self)
@@ -125,6 +119,26 @@ class login_frame (ttk.Frame):
         
         self.password_entry = ttk.Entry(self)
         self.password_entry.grid(row=4, column=0, columnspan=2,pady=10)
+        
+    def change_language(language):
+        print(f"Langauge selected: {language}")
+
+    def show_language_menu(event):
+        language_menu.post(event.x_root, event.y_root)
+    
+    def login_user(self):
+        username = self.username_entry.get()
+        password = self.password_entry.get()
+
+        if verify_user(username, password):
+            messagebox.showinfo("Success", "Login successful! [PLACEHOLDER]")
+            self.clear_form()
+        else:
+            messagebox.showerror("Error", "Invalid username or password![PLACEHOLER]")
+            
+    def clear_form(self):
+        self.username_entry.delete(0, tk.END)
+        self.password_entry.delete(0, tk.END)
             
 if __name__ == "__main__":
     app = pacemaker()
