@@ -1,12 +1,13 @@
-# import tkinter and tksheet package
-import tkinter as tk
-import tksheet
-#import tkinter library
-from tkinter import *        
+import tkinter as tk                        # import tkinter module 
+import tksheet                              #import tksheet for charts////
+from tkinter import *                       #import tkinter library  
 # Following will import tkinter.ttk module and 
 # automatically override all the widgets 
 # which are present in tkinter module. 
 from tkinter.ttk import *
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 # Create Object root (main window frame)
 root = Tk() 
 
@@ -40,18 +41,18 @@ def ResponsiveWidget(widget, *args, **kwargs):
 root.geometry('700x600')                    #size of window
 root.title('Pacemaker Pacing Information')  #title of window
 
-#entry value 1
+#label1
 entry1Label = tk.Label(root, text="DCM Communication with Pacemaker: ")
 entry1Label.place(x=250, y = 80)  
-#entry for value2
+#label2
 entry2Label = tk.Label(root, text="Pacing Mode ")
 entry2Label.place(x=30, y = 180)
-#entry for value3
-entry2Label = tk.Label(root, text="Graph of Pacing Mode ")
-entry2Label.place(x=30, y = 280)
-#entry for value3
-entry2Label = tk.Label(root, text="Programmable Parameters ")
-entry2Label.place(x=30, y = 380)
+#label3
+entry3Label = tk.Label(root, text="Graph of Pacing Mode ")
+entry3Label.place(x=30, y = 280)
+#label4
+entry4Label = tk.Label(root, text="Programmable Parameters ")
+entry4Label.place(x=30, y = 380)
 
 #create button that highlights when pressed for AOO
 button1 = ResponsiveWidget(
@@ -66,6 +67,7 @@ button1 = ResponsiveWidget(
     )
 button1.place(x=150, y=180)
 button1.config(command=lambda button=button1: change_selected_button(button))
+
 #create button that highlights when pressed for VOO
 button2 = ResponsiveWidget(
     tk.Button,
@@ -79,6 +81,7 @@ button2 = ResponsiveWidget(
     )   #abc is not calling
 button2.place(x=180, y=180)
 button2.config(command=lambda button=button2: change_selected_button(button))
+
 #create button that highlights when pressed for AAI
 button3 = ResponsiveWidget(
     tk.Button,
@@ -92,6 +95,7 @@ button3 = ResponsiveWidget(
     )  
 button3.place(x=210, y=180)
 button3.config(command=lambda button=button3: change_selected_button(button))
+
 #create button that highlights when pressed for VVI
 button4 = ResponsiveWidget(
     tk.Button,
@@ -106,36 +110,30 @@ button4 = ResponsiveWidget(
 button4.place(x=240, y=180)
 button4.config(command=lambda button=button4: change_selected_button(button))
 
-sheet = tksheet.Sheet(root)
-sheet.grid()
-sheet.set_sheet_data([[f"{ri+cj}" for cj in range(4)] for ri in range(1)])
-# table enable choices listed below:
-sheet.enable_bindings(("single_select",
-                       "row_select",
-                       "column_width_resize",
-                       "arrowkeys",
-                       "right_click_popup_menu",
-                       "rc_select",
-                       "rc_insert_row",
-                       "rc_delete_row",
-                       "copy",
-                       "cut",
-                       "paste",
-                       "delete",
-                       "undo",
-                       "edit_cell"))
+# Create the main application window
+class App(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Variable Chart Example")
+        self.geometry("600x400")
+        
+        self.create_chart()
 
+    def create_chart(self):
+        # Create a figure for the chart
+        fig, ax = plt.subplots(figsize=(5, 4))
 
-''' highlight default text in textbox upon clicking it for username field
-def in_widget(event):
-    event.widget.select_range(0, 'end')
+        # Create the bar chart
+        ax.bar(variables, values, color='skyblue')
+        
+        # Set labels and title
+        ax.set_xlabel('Variables')
+        ax.set_ylabel('Values')
+        ax.set_title('Bar Chart of Variables')
 
-entry11 = Entry(root)
-entry11.insert(0, 'sample')
-entry11.pack()
-entry11.bind('<FocusIn>', in_widget) '''
-
-
-
+        # Create a canvas to display the figure
+        canvas = FigureCanvasTkAgg(fig, master=self)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
 mainloop()
