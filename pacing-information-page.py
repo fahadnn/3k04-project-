@@ -1,139 +1,88 @@
-import tkinter as tk                        # import tkinter module 
-import tksheet                              #import tksheet for charts////
-from tkinter import *                       #import tkinter library  
-# Following will import tkinter.ttk module and 
-# automatically override all the widgets 
-# which are present in tkinter module. 
-from tkinter.ttk import *
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import tkinter as tk
+from tkinter import ttk
 
-# Create Object root (main window frame)
-root = Tk() 
-
-selected_button = None
-last_bg = None
-#prints out when pacing mode/button selection changes
-def abc():
-    print("Pacing Mode Changed")
-    
-def change_selected_button(button):
-    abc()
-    global selected_button, last_bg
-    if selected_button is not None:
-        selected_button.config(bg=last_bg)
-    selected_button = button
-    last_bg = button.cget("bg")
-    button.config(bg="orange")
-
-def ResponsiveWidget(widget, *args, **kwargs):
-    bindings = {'<Enter>': {'state': 'active'},
-                '<Leave>': {'state': 'normal'}}
-
-    w = widget(*args, **kwargs)
-
-    for (k, v) in bindings.items():
-        w.bind(k, lambda e, kwarg=v: e.widget.config(**kwarg))
-
-    return w
-
-# Initialize tkinter window with dimensions 100x100             
-root.geometry('700x600')                    #size of window
-root.title('Pacemaker Pacing Information')  #title of window
-
-#label1
-entry1Label = tk.Label(root, text="DCM Communication with Pacemaker: ")
-entry1Label.place(x=250, y = 80)  
-#label2
-entry2Label = tk.Label(root, text="Pacing Mode ")
-entry2Label.place(x=30, y = 180)
-#label3
-entry3Label = tk.Label(root, text="Graph of Pacing Mode ")
-entry3Label.place(x=30, y = 280)
-#label4
-entry4Label = tk.Label(root, text="Programmable Parameters ")
-entry4Label.place(x=30, y = 380)
-
-#create button that highlights when pressed for AOO
-button1 = ResponsiveWidget(
-    tk.Button,
-    root,
-    text='AOO',
-    fg='black',
-    activebackground='#B7E3F9',
-    activeforeground='black',
-    highlightthickness=0,
-    relief='flat',
-    )
-button1.place(x=150, y=180)
-button1.config(command=lambda button=button1: change_selected_button(button))
-
-#create button that highlights when pressed for VOO
-button2 = ResponsiveWidget(
-    tk.Button,
-    root,
-    text='VOO',
-    fg='black',
-    activebackground='#B7E3F9',
-    activeforeground='black',
-    highlightthickness=0,
-    relief='flat'
-    )   #abc is not calling
-button2.place(x=180, y=180)
-button2.config(command=lambda button=button2: change_selected_button(button))
-
-#create button that highlights when pressed for AAI
-button3 = ResponsiveWidget(
-    tk.Button,
-    root,
-    text='AAI',
-    fg='black',
-    activebackground='#B7E3F9',
-    activeforeground='black',
-    highlightthickness=0,
-    relief='flat'
-    )  
-button3.place(x=210, y=180)
-button3.config(command=lambda button=button3: change_selected_button(button))
-
-#create button that highlights when pressed for VVI
-button4 = ResponsiveWidget(
-    tk.Button,
-    root,
-    text='VVI',
-    fg='black',
-    activebackground='#B7E3F9',
-    activeforeground='black',
-    highlightthickness=0,
-    relief='flat'
-    )   
-button4.place(x=240, y=180)
-button4.config(command=lambda button=button4: change_selected_button(button))
-
-# Create the main application window
-class App(tk.Tk):
-    def __init__(self):
-        super().__init__()
-        self.title("Variable Chart Example")
-        self.geometry("600x400")
+class PacemakerApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.geometry('700x600')
+        self.root.title('Pacemaker Pacing Information')
         
-        self.create_chart()
-
-    def create_chart(self):
-        # Create a figure for the chart
-        fig, ax = plt.subplots(figsize=(5, 4))
-
-        # Create the bar chart
-        ax.bar(variables, values, color='skyblue')
+        self.selected_button = None
+        self.last_bg = None
+        # Data for parameter list
+        self.parameters = ['Lower Rate Limit', 'Upper Rate Limit', 'Atrial Amplitude', 'Atrial Pulse Width', 
+                           'Ventricular Amplitude', 'Ventricular Pulse Width', 'VRP', 'ARP']
+        self.values = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
         
-        # Set labels and title
-        ax.set_xlabel('Variables')
-        ax.set_ylabel('Values')
-        ax.set_title('Bar Chart of Variables')
+        self.create_widgets()
+        self.create_table()
 
-        # Create a canvas to display the figure
-        canvas = FigureCanvasTkAgg(fig, master=self)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+    def create_widgets(self):
+        # Labels
+        tk.Label(self.root, text="DCM Communication with Pacemaker:").place(x=250, y=80)
+        tk.Label(self.root, text="Pacing Mode").place(x=30, y=180)
+        tk.Label(self.root, text="Graph of Pacing Mode").place(x=30, y=280)
+        tk.Label(self.root, text="Programmable Parameters").place(x=30, y=380)
 
-mainloop()
+        # Buttons
+        self.create_button('AOO', 150, 180)
+        self.create_button('VOO', 180, 180)
+        self.create_button('AAI', 210, 180)
+        self.create_button('VVI', 240, 180)
+
+    def create_button(self, text, x, y):
+        button = tk.Button(
+            self.root,
+            text=text,
+            fg='black',
+            activebackground='#B7E3F9',
+            activeforeground='black',
+            highlightthickness=0,
+            relief='flat',
+        )
+        button.place(x=x, y=y)
+        button.config(command=lambda btn=button: self.change_selected_button(btn))
+
+    def abc(self):
+        print("Pacing Mode Changed")
+
+    def change_selected_button(self, button):
+        self.abc()
+        if self.selected_button is not None:
+            self.selected_button.config(bg=self.last_bg)
+        self.selected_button = button
+        self.last_bg = button.cget("bg")
+        button.config(bg="orange")
+
+    def create_table(self):
+        # Create a Frame for the table
+        table_frame = tk.Frame(self.root)
+        table_frame.place(x=30, y=430, width=640, height=150)  # Adjust dimensions as needed
+
+        # Create a Treeview widget
+        tree = ttk.Treeview(table_frame, columns=("Programmable Parameter", "Value"), show='headings')
+        
+        # Define column headings
+        tree.heading("Programmable Parameter", text="Programmable Parameter")
+        tree.heading("Value", text="Value")
+
+        # Set column widths
+        tree.column("Programmable Parameter", width=200)
+        tree.column("Value", width=100)
+
+        # Insert data into the table
+        for param, value in zip(self.parameters, self.values):
+            tree.insert("", tk.END, values=(param, value))
+
+        # Add a scrollbar
+        scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
+        tree.configure(yscroll=scrollbar.set)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Pack the Treeview widget
+        tree.pack(fill=tk.BOTH, expand=True)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = PacemakerApp(root)
+    root.mainloop()
