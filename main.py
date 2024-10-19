@@ -160,6 +160,7 @@ class login_frame (ttk.Frame):
 
         if verify_user(username, password):
             messagebox.showinfo("Success", "Login successful! [PLACEHOLDER]")
+            # self.master.switch_frame(information_frame)
             self.clear_form()
         else:
             messagebox.showerror("Error", "Invalid username or password![PLACEHOLER]")
