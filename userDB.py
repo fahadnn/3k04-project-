@@ -27,7 +27,7 @@ def register_user(username, password):
         return False, "Maximum number of users reached. Cannot register more than 10 users!"
     
     #checks if username already exists in database otherwise adds user info to database
-    cursor.execute("SELECT * FROM users WHERE username = ?", (username))
+    cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
     if cursor.fetchone() is not None:
         conn.close()
         return False, "Error, username already exists!"
