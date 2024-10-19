@@ -69,12 +69,13 @@ class registration_frame(ttk.Frame):
             self.reg_status.config(text = error_message)
             return
                    
-        if register_user(username, password):
-            self.reg_status.config(text = "Success, user registered!")
+        registration_status, error_message = register_user(username, password)
+        if registration_status:
+            self.reg_status.config(text = error_message)
             self.clear_form()
             self.master.switch_frame(login_frame)
         else:
-            self.reg_status.config(text = "Error, username already exists!")
+            self.reg_status.config(text = error_message)
             
     def validate_registration(self, username, password, password_reentry):
         if len(username) == 0:
