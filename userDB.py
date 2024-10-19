@@ -18,7 +18,7 @@ def register_user(username, password):
     conn = sqlite3.connect("users.db")
     cursor = conn.cursor()
     
-    #checks number of users in database and returns error if there is greater than 10
+    #checks number of users in database and returns error if there is 10 already
     cursor.execute("SELECT COUNT (*) FROM users")
     user_count = cursor.fetchone()[0]
     

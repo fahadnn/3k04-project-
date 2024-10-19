@@ -147,6 +147,9 @@ class login_frame (ttk.Frame):
         self.password_entry = ttk.Entry(self)
         self.password_entry.grid(row=4, column=0, columnspan=2,pady=10)
         
+        self.login_status = ttk.Label(self, text = " ")
+        self.login_status.grid(row=10, column=0, columnspan=2,pady=10)
+        
     def change_language(language):
         print(f"Langauge selected: {language}")
 
@@ -162,7 +165,7 @@ class login_frame (ttk.Frame):
             self.clear_form()
             self.master.switch_frame(information_frame)
         else:
-            messagebox.showerror("Error", "Invalid username or password![PLACEHOLER]")
+            self.login_status.config(text = "Login unsuccessful, check username and/or password")
             
     def clear_form(self):
         self.username_entry.delete(0, tk.END)
