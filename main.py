@@ -25,50 +25,59 @@ class registration_frame(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
         
+        #configuring grid layout
         self.grid_columnconfigure(0, weight=9)
         self.grid_columnconfigure(1, weight=1) 
         self.grid_columnconfigure(2, weight=9) 
-        # self.grid_rowconfigure(0, weight=1)     # Empty space above title
-        # self.grid_rowconfigure(6, weight=1)   
         
+        #registration page title
         registration_title = ttk.Label(self, text = "Registration", font = ("Arial", 18, "bold"))
         registration_title.grid(row = 0, column = 1, pady = 30)
         
+        #username label and entry box
         ttk.Label(self, text = "Username").grid (row = 1, column = 1, pady = None, sticky = "w")
         
         self.username_reg_entry = ttk.Entry(self)
         self.username_reg_entry.grid(row = 2, column = 1, pady = (0,15), sticky = "w"+"e")
         
+        #oassword labal and entry box
         ttk.Label(self, text = "Password").grid(row = 3, column = 1, pady = None, sticky = "w")
         
         self.password_reg_entry = ttk.Entry(self, show = "*")
         self.password_reg_entry.grid(row = 4, column = 1, pady = (0,15), sticky = "w"+"e")
         
+        #password re-entry labal and entry box
         ttk.Label(self, text = "Re-enter Password").grid(row = 5, column = 1, pady = None, sticky = "w")
         
         self.password_reg_reentry = ttk.Entry(self, show = "*")
         self.password_reg_reentry.grid(row = 6, column = 1, pady = (0,15), sticky = "w"+"e")
         
+        #register button
         self.register_button = ttk.Button(self, text = "Register", command = self.register_user)
         self.register_button.grid(row = 7, column = 1)
         
+        #registration status message
         self.reg_status = ttk.Label(self, text = " ")
         self.reg_status.grid(row = 8, column = 0, columnspan = 3, pady = None)
         
+        #login label and button if already have an account
         ttk.Label(self, text = "Already have an account?").grid(row = 9, column = 1, pady = (30,0))
         
         ttk.Button(self, text = "Login", command = lambda: master.switch_frame(login_frame)).grid(row = 10, column = 1)
     
+    #registration validation and adds to database if successful
     def register_user(self):
         username = self.username_reg_entry.get()
         password = self.password_reg_entry.get()
         password_reentry = self.password_reg_reentry.get()
         
+        #changes registration status label is updates if there is an error with username or password input
         error_message = self.validate_registration(username, password, password_reentry)
         if error_message:
             self.reg_status.config(text = error_message)
             return
-                   
+        
+        #username and password inputs validated with data in database
         registration_status, error_message = register_user(username, password)
         if registration_status:
             self.reg_status.config(text = error_message)
@@ -77,6 +86,7 @@ class registration_frame(ttk.Frame):
         else:
             self.reg_status.config(text = error_message)
             
+    #validates username and password inputs
     def validate_registration(self, username, password, password_reentry):
         if len(username) == 0:
              return "Error, username cannot be empty!"
@@ -101,6 +111,7 @@ class registration_frame(ttk.Frame):
 
         return None
             
+    #clears form
     def clear_form(self):
         self.username_reg_entry.delete(0, tk.END)
         self.password_reg_entry.delete(0, tk.END)

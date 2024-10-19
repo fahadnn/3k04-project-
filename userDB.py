@@ -1,5 +1,6 @@
 import sqlite3
 
+#creating database file if not already exists
 def create_db(dbName = "users.db"):
     conn = sqlite3.connect(dbName)
     cursor = conn.cursor()
@@ -12,10 +13,12 @@ def create_db(dbName = "users.db"):
     conn.commit()
     conn.close()
     
+#registration validation and adds inputs to database
 def register_user(username, password):
     conn = sqlite3.connect("users.db")
     cursor = conn.cursor()
     
+    #checks number of users in database and returns error if there is greater than 10
     cursor.execute("SELECT COUNT (*) FROM users")
     user_count = cursor.fetchone()[0]
     
@@ -23,7 +26,8 @@ def register_user(username, password):
         conn.close()
         return False, "Maximum number of users reached. Cannot register more than 10 users!"
     
-    cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+    #checks if username already exists in database otherwise adds user info to database
+    cursor.execute("SELECT * FROM users WHERE username = ?", (username))
     if cursor.fetchone() is not None:
         conn.close()
         return False, "Error, username already exists!"
@@ -34,6 +38,7 @@ def register_user(username, password):
     conn.close()
     return True, "Success, user registered!"
 
+#checks if login inputs match data in database
 def verify_user(username, password):
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
