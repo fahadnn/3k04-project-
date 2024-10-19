@@ -138,7 +138,7 @@ class login_frame (ttk.Frame):
         self.register_button = ttk.Button(self, text = "Register", command = lambda: master.switch_frame(registration_frame))
         self.register_button.grid(row=5, column=1, columnspan=1, pady=20)
         
-        self.language_button = ttk.Button(self, text = "Login", command = self.bind("<Button-1>", language_menu))
+        self.language_button = ttk.Button(self, text="Language", command=self.show_language_menu)
         self.language_button.grid(row=0, column=1, padx=20, pady=10, sticky="e")
     
         self.username_entry = ttk.Entry(self)
@@ -211,11 +211,12 @@ class information_frame(ttk.Frame):
         button.place(x=x, y=y)
         button.config(command=lambda btn=button: self.change_selected_button(btn))
 
+#Print a message to the terminal upon changing pacing mode
     def abc(self):
         print("Pacing Mode Changed")
-
+#Leave highlighted the most recent Pacing Mode button pressed
     def change_selected_button(self, button):
-        self.abc()
+        self.abc()      #Print message to indicate new pacing mode
         if self.selected_button is not None:
             self.selected_button.config(bg=self.last_bg)
         self.selected_button = button
