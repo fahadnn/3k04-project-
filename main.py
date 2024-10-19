@@ -177,6 +177,11 @@ class information_frame(ttk.Frame):
         
         self.selected_button = None
         self.last_bg = None
+        
+        # Add a communication-status label (active/Inactive)
+        self.comm_status_label = ttk.Label(self, text="Inactive", foreground="red")
+        self.comm_status_label.place(x=550, y=80)  # Position 
+        
         # Data for parameter list
         self.parameters = ['Lower Rate Limit', 'Upper Rate Limit', 'Atrial Amplitude', 'Atrial Pulse Width', 
                            'Ventricular Amplitude', 'Ventricular Pulse Width', 'VRP', 'ARP']
@@ -198,6 +203,8 @@ class information_frame(ttk.Frame):
         self.create_button('AAI', 210, 180)
         self.create_button('VVI', 240, 180)
 
+    #create button instance, place the button on gui, call 
+    #change_selected_button method when clicked
     def create_button(self, text, x, y):
         button = tk.Button(
             self,
@@ -214,11 +221,25 @@ class information_frame(ttk.Frame):
 #Print a message to the terminal upon changing pacing mode
     def abc(self):
         print("Pacing Mode Changed")
-#Leave highlighted the most recent Pacing Mode button pressed
+        
+#method to set label back to inactive, for when we add the logic (ASSIGNMENT2)
+    def set_inactive(self): 
+        self.comm_status_label.config(text="Inactive", foreground="red")
+
+#Manages the selection/highlight state of the pacing mode buttons 
     def change_selected_button(self, button):
         self.abc()      #Print message to indicate new pacing mode
+        
+        # Update communication status label to "Active" upon pacing mode selection (FOR NOW/ASSIGNMENT1)
+        self.comm_status_label.config(text="Active", foreground="green")
+        # Simulate a delay for communication (for demo purposes, REPLACE WITH LOGIC FOR ASSIGNMENT2)
+        self.after(2000, self.set_inactive)  # Set it back to inactive after 2 seconds
+        
+        #if theres a previously selected button, reset the buttons background to original state
         if self.selected_button is not None:
-            self.selected_button.config(bg=self.last_bg)
+            self.selected_button.config(bg=self.last_bg)    
+        #update selectedbutton to the most currently clicked button
+        #and make its background orange
         self.selected_button = button
         self.last_bg = button.cget("bg")
         button.config(bg="orange")
