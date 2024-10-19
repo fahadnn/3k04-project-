@@ -24,25 +24,40 @@ class pacemaker(tk.Tk):
 class registration_frame(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
-        ttk.Label(self, text = "Registration").pack()
         
-        ttk.Label(self, text = "Username").pack()
+        self.grid_columnconfigure(0, weight=9)
+        self.grid_columnconfigure(1, weight=1) 
+        self.grid_columnconfigure(2, weight=9) 
+        # self.grid_rowconfigure(0, weight=1)     # Empty space above title
+        # self.grid_rowconfigure(6, weight=1)   
+        
+        registration_title = ttk.Label(self, text = "Registration", font = ("Arial", 18, "bold"))
+        registration_title.grid(row = 0, column = 1, pady = 30)
+        
+        ttk.Label(self, text = "Username").grid (row = 1, column = 1, pady = None, sticky = "w")
+        
         self.username_reg_entry = ttk.Entry(self)
-        self.username_reg_entry.pack()
+        self.username_reg_entry.grid(row = 2, column = 1, pady = (0,15), sticky = "w"+"e")
         
-        ttk.Label(self, text = "Password").pack()
+        ttk.Label(self, text = "Password").grid(row = 3, column = 1, pady = None, sticky = "w")
+        
         self.password_reg_entry = ttk.Entry(self, show = "*")
-        self.password_reg_entry.pack()
+        self.password_reg_entry.grid(row = 4, column = 1, pady = (0,15), sticky = "w"+"e")
         
-        ttk.Label(self, text = "Re-enter Password").pack()
+        ttk.Label(self, text = "Re-enter Password").grid(row = 5, column = 1, pady = None, sticky = "w")
+        
         self.password_reg_reentry = ttk.Entry(self, show = "*")
-        self.password_reg_reentry.pack()
+        self.password_reg_reentry.grid(row = 6, column = 1, pady = (0,15), sticky = "w"+"e")
         
         self.register_button = ttk.Button(self, text = "Register", command = self.register_user)
-        self.register_button.pack()
+        self.register_button.grid(row = 7, column = 1)
         
         self.reg_status = ttk.Label(self, text = " ")
-        self.reg_status.pack()
+        self.reg_status.grid(row = 8, column = 0, columnspan = 3, pady = None)
+        
+        ttk.Label(self, text = "Already have an account?").grid(row = 9, column = 1, pady = (30,0))
+        
+        ttk.Button(self, text = "Login", command = lambda: master.switch_frame(login_frame)).grid(row = 10, column = 1)
     
     def register_user(self):
         username = self.username_reg_entry.get()
@@ -108,7 +123,7 @@ class login_frame (ttk.Frame):
         self.login_button = ttk.Button(self, text = "Login", command = self.login_user)
         self.login_button.grid(row=5, column=0, columnspan=1, pady=20)
         
-        self.register_button = ttk.Button(self, text = "Register", command =lambda: master.switch_frame(registration_frame))
+        self.register_button = ttk.Button(self, text = "Register", command = lambda: master.switch_frame(registration_frame))
         self.register_button.grid(row=5, column=1, columnspan=1, pady=20)
         
         self.language_button = ttk.Button(self, text = "Login", command = self.bind("<Button-1>", language_menu))
