@@ -153,6 +153,7 @@ class login_frame (ttk.Frame):
     def show_language_menu(event):
         language_menu.post(event.x_root, event.y_root)
     
+    #validates login inputs
     def login_user(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
