@@ -158,6 +158,7 @@ class login_frame (ttk.Frame):
         self.register_button = ttk.Button(self, text="Register", command=lambda: master.switch_frame(registration_frame))
         self.register_button.grid(row=5, column=1, pady=20)
 
+    #function to allow users to change to desired language in language menu
     def change_language(self, language):
         print(f"Language selected: {language}")
 
