@@ -119,57 +119,69 @@ class registration_frame(ttk.Frame):
                         
 
 class login_frame (ttk.Frame):
-    def __init__(self,master):
+    def __init__(self, master):
         super().__init__(master)
-            
-        ttk.Label(self, text = "Welcome to DCM User Interface for Pacemaker").grid(row=0, column=0, pady=10, padx=(0,20), sticky="w")
-        ttk.Label(self, text = "Username").grid(row=1, column=0,columnspan=2, pady=10)
-        ttk.Label(self, text = "Password").grid(row=3, column=0, columnspan=2,pady=10)
         
-        language_menu = tk.Menu(self, tearoff=0) 
+        # Set the frame to be responsive
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(6, weight=1)  # Extra row for better spacing
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        
+        # Add labels, entries, and buttons with grid layout
+        ttk.Label(self, text="Welcome to DCM User Interface for Pacemaker").grid(row=0, column=0, columnspan=2, pady=10, padx=20, sticky="nsew")
+        ttk.Label(self, text="Username").grid(row=1, column=0, columnspan=2, pady=10)
+        ttk.Label(self, text="Password").grid(row=3, column=0, columnspan=2, pady=10)
+        
+        # Language menu
+        language_menu = tk.Menu(self, tearoff=0)
         languages = ["English", "Danish", "Dutch", "French", "German", "Spanish", "Italian", "Swedish"]
 
         for lang in languages:
-            language_menu.add_command(label=lang, command=lambda l=lang: change_language(l))
+            language_menu.add_command(label=lang, command=lambda l=lang: self.change_language(l))
         
-        self.login_button = ttk.Button(self, text = "Login", command = self.login_user)
-        self.login_button.grid(row=5, column=0, columnspan=1, pady=20)
-        
-        self.register_button = ttk.Button(self, text = "Register", command = lambda: master.switch_frame(registration_frame))
-        self.register_button.grid(row=5, column=1, columnspan=1, pady=20)
-        
-        self.language_button = ttk.Button(self, text="Language", command=self.show_language_menu)
+        self.language_button = ttk.Button(self, text="Language")
         self.language_button.grid(row=0, column=1, padx=20, pady=10, sticky="e")
-    
-        self.username_entry = ttk.Entry(self)
-        self.username_entry.grid(row=2, column=0, columnspan=2,pady=10)
-        
-        self.password_entry = ttk.Entry(self)
-        self.password_entry.grid(row=4, column=0, columnspan=2,pady=10)
-        
-        self.login_status = ttk.Label(self, text = " ")
-        self.login_status.grid(row=10, column=0, columnspan=2,pady=10)
-        
-    def change_language(language):
-        print(f"Langauge selected: {language}")
+        self.language_button.bind("<Button-1>", self.show_language_menu)
 
-    def show_language_menu(event):
-        language_menu.post(event.x_root, event.y_root)
-    
-    #validates login inputs
+        # Username and Password entries
+        self.username_entry = ttk.Entry(self)
+        self.username_entry.grid(row=2, column=0, columnspan=2, pady=10)
+        
+        self.password_entry = ttk.Entry(self, show="*")
+        self.password_entry.grid(row=4, column=0, columnspan=2, pady=10)
+        
+        # Login and Register buttons
+        self.login_button = ttk.Button(self, text="Login", command=self.login_user)
+        self.login_button.grid(row=5, column=0, pady=20)
+
+        self.register_button = ttk.Button(self, text="Register", command=lambda: master.switch_frame(registration_frame))
+        self.register_button.grid(row=5, column=1, pady=20)
+
+    def change_language(self, language):
+        print(f"Language selected: {language}")
+
+    def show_language_menu(self, event):
+        language_menu = tk.Menu(self)
+        languages = ["English", "Danish", "Dutch", "French", "German", "Spanish", "Italian", "Swedish"]
+        for lang in languages:
+            language_menu.add_command(label=lang, command=lambda l=lang: self.change_language(l))
+        language_menu.tk_popup(event.x_root, event.y_root)
+
     def login_user(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
 
         if verify_user(username, password):
+            messagebox.showinfo("Success", "Login successful!")
             self.clear_form()
-            self.master.switch_frame(information_frame)
         else:
-            self.login_status.config(text = "Login unsuccessful, check username and/or password")
-            
+            messagebox.showerror("Error", "Invalid username or password!")
+
     def clear_form(self):
         self.username_entry.delete(0, tk.END)
         self.password_entry.delete(0, tk.END)
+
 
 class information_frame(ttk.Frame):
     def __init__(self, master):
