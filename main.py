@@ -155,9 +155,11 @@ class login_frame (ttk.Frame):
         self.login_button = ttk.Button(self, text="Login", command=self.login_user)
         self.login_button.grid(row=5, column=0, pady=20)
 
+         # Register button that switches to the registration frame
         self.register_button = ttk.Button(self, text="Register", command=lambda: master.switch_frame(registration_frame))
         self.register_button.grid(row=5, column=1, pady=20)
         
+        # Label to display login status (successful or unsuccessful)
         self.login_status = ttk.Label(self, text = " ")
         self.login_status.grid(row=6, column=0, columnspan=2,pady=10)
 
@@ -165,26 +167,35 @@ class login_frame (ttk.Frame):
     def change_language(self, language):
         print(f"Language selected: {language}")
 
+    # Function to display the language menu when the user clicks on the "Language" button
     def show_language_menu(self, event):
-        language_menu = tk.Menu(self)
+        language_menu = tk.Menu(self) # Create a new language menu
         languages = ["English", "Danish", "Dutch", "French", "German", "Spanish", "Italian", "Swedish"]
+        
+        # Populate the menu with languages
         for lang in languages:
             language_menu.add_command(label=lang, command=lambda l=lang: self.change_language(l))
+        
+        # Display the menu at the position of the mouse click    
         language_menu.tk_popup(event.x_root, event.y_root)
 
+    
+    # Function to handle the login process
     def login_user(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
 
+         # Verify the username and password against the database or authentication system
         if verify_user(username, password):
             self.clear_form()
             self.master.switch_frame(information_frame)
         else:
             self.login_status.config(text = "Login unsuccessful, invalid username and/or password")
 
+    # Function to clear the username and password entry fields
     def clear_form(self):
-        self.username_entry.delete(0, tk.END)
-        self.password_entry.delete(0, tk.END)
+        self.username_entry.delete(0, tk.END) # Clear the username fiel
+        self.password_entry.delete(0, tk.END) # Clear the password field
 
 
 class information_frame(ttk.Frame):
