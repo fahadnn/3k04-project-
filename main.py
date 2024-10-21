@@ -157,6 +157,9 @@ class login_frame (ttk.Frame):
 
         self.register_button = ttk.Button(self, text="Register", command=lambda: master.switch_frame(registration_frame))
         self.register_button.grid(row=5, column=1, pady=20)
+        
+        self.login_status = ttk.Label(self, text = " ")
+        self.login_status.grid(row=6, column=0, columnspan=2,pady=10)
 
     #function to allow users to change to desired language in language menu
     def change_language(self, language):
@@ -174,10 +177,10 @@ class login_frame (ttk.Frame):
         password = self.password_entry.get()
 
         if verify_user(username, password):
-            messagebox.showinfo("Success", "Login successful!")
             self.clear_form()
+            self.master.switch_frame(information_frame)
         else:
-            messagebox.showerror("Error", "Invalid username or password!")
+            self.login_status.config(text = "Login unsuccessful, invalid username and/or password")
 
     def clear_form(self):
         self.username_entry.delete(0, tk.END)
