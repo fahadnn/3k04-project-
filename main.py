@@ -2,6 +2,7 @@ import string
 import tkinter as tk
 from tkinter import ttk, messagebox
 from userDB import create_db, register_user, verify_user
+from parameterDB import create_parameters_db, save_parameters, get_parameters
 import sqlite3
 
 class pacemaker(tk.Tk):
@@ -10,7 +11,8 @@ class pacemaker(tk.Tk):
         self.title ("Pacemaker")
         self.geometry ("700x600")
         
-        create_db()
+        create_db() #initialize user login info DB
+        create_parameters_db() #User Programmable parameters info DB
         
         self.current_frame = None
         self.user_id = None  # Store the logged-in user ID to associate w/ parameters
@@ -104,8 +106,6 @@ class registration_frame(ttk.Frame):
         
         if not any(char in string.punctuation for char in password):
             return r"Error, password must contain at least one special character: !\"#$%&'()*+,-./:;<=>?@[\]^_{|}~`"
-
-
         
         if any(char.isspace() for char in password):
             return "Error, password cannot contain whitespaces!"
@@ -188,10 +188,10 @@ class login_frame (ttk.Frame):
     def login_user(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
-        verified, user_id = verify_user(username, password)
+        verified, user_id = verify_user(username, password) #unpack the user id and bool that tells if login was success
         
          # Verify the username and password against the database or authentication system
-        if verify_user(username, password):
+        if verified:
             self.clear_form()
             self.master.user_id = user_id  # Store the logged-in user ID
             self.master.switch_frame(information_frame)
@@ -300,25 +300,44 @@ class information_frame(ttk.Frame):
         
     def save_values(self):
         user_id = self.master.user_id  # Get the logged-in user ID
-        conn = sqlite3.connect('users.db')
-        cursor = conn.cursor()
+        if user_id is None:
+            print("Error: No user is logged in.")
+            return  # Exit the method if user_id is invalid
         
-        # Clear the previous entries in the database
-        cursor.execute('DELETE FROM parameters WHERE user_id = ?', (user_id,))
-
-        # Insert the new values into the database
+        parameter_values = {}
         for i, entry in enumerate(self.entries):
             param = self.parameters[i]
             value = entry.get()
             try:
-                cursor.execute('INSERT INTO parameters (user_id, parameter, value) VALUES (?, ?, ?)', (user_id, param, float(value)))
+                parameter_values[param] = float(value)  # Store each parameter and its value
             except ValueError:
                 print(f"Invalid input for {param}: {value}")
 
-        conn.commit()
-        conn.close()
-        print("Values saved to database.")
-            
+        save_parameters(user_id, parameter_values)  # Save all parameters at once
+        print("Parameter values saved to database.")
+
+        
+        
+    '''    
+    def save_values(self):
+        user_id = self.master.user_id  # Get the logged-in user ID
+        
+        #check if user_id is available/not null
+        if user_id is None:
+            print("Error: No user is logged in.")
+            return  # Exit the method if user_id is invalid
+        
+        for i, entry in enumerate(self.entries):
+            param = self.parameters[i]
+            value = entry.get()
+            try:
+                save_parameter(user_id, param, float(value))
+            except ValueError:
+                print(f"Invalid input for {param}: {value}")
+            except sqlite3.IntegrityError as e:
+                print(f"Database error: {e}")  # Handle the IntegrityError gracefully
+        print("Parameter values saved to database.")
+    '''       
 if __name__ == "__main__":
     app = pacemaker()
     app.mainloop()
