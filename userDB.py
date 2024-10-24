@@ -1,15 +1,23 @@
 import sqlite3
 
-#creating database file if not already exists
-def create_db(dbName = "users.db"):
+# Creating database file if not already exists
+def create_db(dbName="users.db"):
     conn = sqlite3.connect(dbName)
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
-            username TEXT PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
             password TEXT NOT NULL  
         )""")
-    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS parameters (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            parameter TEXT NOT NULL,
+            value REAL NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )""")
     conn.commit()
     conn.close()
     
@@ -43,8 +51,8 @@ def verify_user(username, password):
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
     
-    cursor.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password))
+    cursor.execute("SELECT id FROM users WHERE username = ? AND password = ?", (username, password))
     user = cursor.fetchone()
     conn.close()
     
-    return user is not None 
+    return user is not None, user[0] if user else None

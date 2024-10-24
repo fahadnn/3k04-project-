@@ -2,6 +2,7 @@ import string
 import tkinter as tk
 from tkinter import ttk, messagebox
 from userDB import create_db, register_user, verify_user
+import sqlite3
 
 class pacemaker(tk.Tk):
     def __init__(self):
@@ -12,6 +13,7 @@ class pacemaker(tk.Tk):
         create_db()
         
         self.current_frame = None
+        self.user_id = None  # Store the logged-in user ID to associate w/ parameters
         self.switch_frame(login_frame)
     
     def switch_frame(self, frame):
@@ -101,7 +103,9 @@ class registration_frame(ttk.Frame):
             return "Error, password must contain at least one uppercase and lowercase letter!"
         
         if not any(char in string.punctuation for char in password):
-            return "Error, password must contain at least one special character: !\"#$%&'()*+,-./:;<=>?@[\]^_{|}~`"
+            return r"Error, password must contain at least one special character: !\"#$%&'()*+,-./:;<=>?@[\]^_{|}~`"
+
+
         
         if any(char.isspace() for char in password):
             return "Error, password cannot contain whitespaces!"
@@ -184,10 +188,12 @@ class login_frame (ttk.Frame):
     def login_user(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
-
+        verified, user_id = verify_user(username, password)
+        
          # Verify the username and password against the database or authentication system
         if verify_user(username, password):
             self.clear_form()
+            self.master.user_id = user_id  # Store the logged-in user ID
             self.master.switch_frame(information_frame)
         else:
             self.login_status.config(text = "Login unsuccessful, invalid username and/or password")
@@ -197,108 +203,129 @@ class login_frame (ttk.Frame):
         self.username_entry.delete(0, tk.END) # Clear the username fiel
         self.password_entry.delete(0, tk.END) # Clear the password field
 
-
 class information_frame(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
-        
+
         self.selected_button = None
         self.last_bg = None
-        
+
         # Add a communication-status label (active/Inactive)
         self.comm_status_label = ttk.Label(self, text="Inactive", foreground="red")
-        self.comm_status_label.place(x=550, y=80)  # Position 
-        
+        self.comm_status_label.grid(row=0, column=1, padx=10, pady=10)  # Position with grid
+
         # Data for parameter list
-        self.parameters = ['Lower Rate Limit', 'Upper Rate Limit', 'Atrial Amplitude', 'Atrial Pulse Width', 
-                           'Ventricular Amplitude', 'Ventricular Pulse Width', 'VRP', 'ARP']
-        self.values = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-        
+        self.parameters = ['Lower Rate Limit', 'Upper Rate Limit', 'Atrial Amplitude', 
+                           'Atrial Pulse Width', 'Ventricular Amplitude', 
+                           'Ventricular Pulse Width', 'VRP', 'ARP']
+        self.values = [1.0] * len(self.parameters)  # Default values
+        self.entries = []  # To store Entry widgets
         self.create_widgets()
-        self.create_table()
 
     def create_widgets(self):
         # Labels
-        tk.Label(self, text="DCM Communication with Pacemaker:").place(x=250, y=80)
-        tk.Label(self, text="Pacing Mode").place(x=30, y=180)
-        tk.Label(self, text="Graph of Pacing Mode").place(x=30, y=280)
-        tk.Label(self, text="Programmable Parameters").place(x=30, y=380)
+        tk.Label(self, text="DCM Communication with Pacemaker:").grid(row=0, column=0, padx=10, pady=10, sticky="w")
+        tk.Label(self, text="Pacing Mode").grid(row=1, column=0, padx=10, pady=10, sticky="w")
+        tk.Label(self, text="Graph of Pacing Mode").grid(row=2, column=0, padx=10, pady=10, sticky="w")
+        tk.Label(self, text="Programmable Parameters").grid(row=5, column=0, padx=10, pady=10, sticky="w")
 
         # Buttons
-        self.create_button('AOO', 150, 180)
-        self.create_button('VOO', 180, 180)
-        self.create_button('AAI', 210, 180)
-        self.create_button('VVI', 240, 180)
+        self.create_button('AOO', 1, 1)
+        self.create_button('VOO', 1, 2)
+        self.create_button('AAI', 1, 3)
+        self.create_button('VVI', 1, 4)
+        
+        # Entry widgets for parameters
+        for i, param in enumerate(self.parameters):
+            tk.Label(self, text=param).grid(row=6+i, column=0, padx=10, pady=5, sticky="w")
+            entry = tk.Entry(self)
+            entry.insert(0, str(self.values[i]))  # Set default value
+            entry.grid(row=6+i, column=1, padx=10, pady=5)
+            self.entries.append(entry)
 
-    #create button instance, place the button on gui, call 
-    #change_selected_button method when clicked
-    def create_button(self, text, x, y):
+        # Button to save values to the database
+        save_button = tk.Button(self, text="Save Values", command=self.save_values)
+        save_button.grid(row=6+len(self.parameters), column=0, columnspan=2, pady=10)
+
+    def create_button(self, text, row, col):
         button = tk.Button(
             self,
             text=text,
             fg='black',
+            bg='lightgray',  # Default background color
             activebackground='#B7E3F9',
             activeforeground='black',
             highlightthickness=0,
-            relief='flat',
+            relief='raised',  # Make the button look more clickable
+            padx=10,  # Add some padding to make it larger
+            pady=5
         )
-        button.place(x=x, y=y)
+        button.grid(row=row, column=col, padx=5, pady=5)  # Use grid for button placement
+
+        # Bind mouse enter and leave events for hover effect
+        button.bind("<Enter>", lambda e: self.on_hover(button))
+        button.bind("<Leave>", lambda e: self.on_leave(button))
+
+        # Configure button command
         button.config(command=lambda btn=button: self.change_selected_button(btn))
 
-#Print a message to the terminal upon changing pacing mode
+# Change color only if the button is not selected, and its bg is not orange (selected button)
+    def on_hover(self, button):
+        if button != self.selected_button and (button.cget("background") != "orange") : 
+            button.config(bg='skyblue')
+
+# Reset color only if the button is not selected and its bg is not orange (selected button)
+    def on_leave(self, button):
+        if button != self.selected_button and (button.cget("background") != "orange") : 
+            button.config(bg='lightgray')
+
+#print a message when pacing mode is changed
     def abc(self):
         print("Pacing Mode Changed")
-        
-#method to set label back to inactive, for when we add the logic (ASSIGNMENT2)
+
+#set communication with pacemaker status to inactive
     def set_inactive(self): 
         self.comm_status_label.config(text="Inactive", foreground="red")
-
-#Manages the selection/highlight state of the pacing mode buttons 
+         
     def change_selected_button(self, button):
-        self.abc()      #Print message to indicate new pacing mode
-        
-        # Update communication status label to "Active" upon pacing mode selection (FOR NOW/ASSIGNMENT1)
+        self.abc()
+        #set communication status with pacemaker to active when pacing mode button is pressed
         self.comm_status_label.config(text="Active", foreground="green")
-        # Simulate a delay for communication (for demo purposes, REPLACE WITH LOGIC FOR ASSIGNMENT2)
-        self.after(2000, self.set_inactive)  # Set it back to inactive after 2 seconds
-        
-        #if theres a previously selected button, reset the buttons background to original state
-        if self.selected_button is not None:
-            self.selected_button.config(bg=self.last_bg)    
-        #update selectedbutton to the most currently clicked button
-        #and make its background orange
+        self.after(2000, self.set_inactive)
+
+        if self.selected_button is not None:    #if button is clicked...
+            self.selected_button.config(bg="lightgray") #set previously clicked buttons bg to lightgray default
         self.selected_button = button
-        self.last_bg = button.cget("bg")
-        button.config(bg="orange")
-
-    def create_table(self):
-        # Create a Frame for the table
-        table_frame = tk.Frame(self)
-        table_frame.place(x=30, y=430, width=640, height=150)  # Adjust dimensions as needed
-
-        # Create a Treeview widget
-        tree = ttk.Treeview(table_frame, columns=("Programmable Parameter", "Value"), show='headings')
+        button.config(bg="orange") #change selected buttons bg to orange
         
-        # Define column headings
-        tree.heading("Programmable Parameter", text="Programmable Parameter")
-        tree.heading("Value", text="Value")
+    def save_values(self):
+        user_id = self.master.user_id  # Get the logged-in user ID
+        conn = sqlite3.connect('users.db')
+        cursor = conn.cursor()
+        
+        # Clear the previous entries in the database
+        cursor.execute('DELETE FROM parameters WHERE user_id = ?', (user_id,))
 
-        # Set column widths
-        tree.column("Programmable Parameter", width=200)
-        tree.column("Value", width=100)
+        # Insert the new values into the database
+        for i, entry in enumerate(self.entries):
+            param = self.parameters[i]
+            value = entry.get()
+            try:
+                cursor.execute('INSERT INTO parameters (user_id, parameter, value) VALUES (?, ?, ?)', (user_id, param, float(value)))
+            except ValueError:
+                print(f"Invalid input for {param}: {value}")
 
-        # Insert data into the table
-        for param, value in zip(self.parameters, self.values):
-            tree.insert("", tk.END, values=(param, value))
-
-        # Add a scrollbar
-        scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
-        tree.configure(yscroll=scrollbar.set)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-        # Pack the Treeview widget
-        tree.pack(fill=tk.BOTH, expand=True)
+        conn.commit()
+        conn.close()
+        print("Values saved to database.")
             
 if __name__ == "__main__":
     app = pacemaker()
     app.mainloop()
+    
+    
+    
+    #add save button for programmable parameters list - done
+    #perform error handling for if programmable parameter data enteres is out of range
+    #make the pacing mode buttons more obvious that they are buttons - done
+    #add programmable parameters into the userDB database and attach to each user - done
