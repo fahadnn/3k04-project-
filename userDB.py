@@ -1,4 +1,6 @@
 import sqlite3
+import hashlib
+import os
 
 # Creating database file if not already exists
 def create_db(dbName="users.db"):
@@ -9,6 +11,7 @@ def create_db(dbName="users.db"):
         CREATE TABLE IF NOT EXISTS users (
             user_id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
+            salt TEXT NOT NULL,
             password TEXT NOT NULL
         )
     ''')
@@ -16,6 +19,9 @@ def create_db(dbName="users.db"):
     conn.commit()
     conn.close()
     
+def hash_password(password, salt):
+    return hashlib.sha256((salt + password).encode('utf-8')).hexdigest()
+
 # Registration validation and adds inputs to database
 def register_user(username, password):
     conn = sqlite3.connect("users.db")
@@ -35,8 +41,11 @@ def register_user(username, password):
         conn.close()
         return False, "Error, username already exists!"
     
+    salt = os.urandom(16).hex()
+    hashed_password = hash_password(password, salt)
+    
     # Initialize default programmable parameters field as empty JSON
-    cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password)) 
+    cursor.execute("INSERT INTO users (username, salt, password) VALUES (?, ?, ?)", (username, salt, hashed_password))
     
     conn.commit()
     conn.close()
@@ -47,10 +56,18 @@ def verify_user(username, password):
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
     
-    cursor.execute("SELECT user_id, password FROM users WHERE username = ?", (username,))  # Change 'id' to 'user_id'
-    user = cursor.fetchone()
+    cursor.execute("SELECT user_id, salt, password FROM users WHERE username = ?", (username,))
+    result = cursor.fetchone()
     conn.close()
     
-    if user and user[1] == password:  # Check password
-        return True, user[0]  # Return True and user ID if password matches username
-    return False, None  #return false none if password is wrong 
+    #Username not in database
+    if result is None:
+        return False, None
+    
+    user_id, stored_salt, stored_hashed_password = result
+    hashed_password = hash_password(password, stored_salt)
+    
+    if hashed_password == stored_hashed_password:
+        return True, user_id
+    else:
+        return False, None
