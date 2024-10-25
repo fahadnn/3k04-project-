@@ -19,6 +19,7 @@ def create_db(dbName="users.db"):
     conn.commit()
     conn.close()
     
+#hash password with salt added
 def hash_password(password, salt):
     return hashlib.sha256((salt + password).encode('utf-8')).hexdigest()
 
@@ -35,16 +36,17 @@ def register_user(username, password):
         conn.close()
         return False, "Maximum number of users reached. Cannot register more than 10 users!"
     
-    # Check if username already exists in the database; otherwise, add user info
+    # Check if username already exists in the database
     cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
     if cursor.fetchone() is not None:
         conn.close()
         return False, "Error, username already exists!"
     
+    #creates salt and hashes password
     salt = os.urandom(16).hex()
     hashed_password = hash_password(password, salt)
     
-    # Initialize default programmable parameters field as empty JSON
+    #store user information
     cursor.execute("INSERT INTO users (username, salt, password) VALUES (?, ?, ?)", (username, salt, hashed_password))
     
     conn.commit()
@@ -64,9 +66,11 @@ def verify_user(username, password):
     if result is None:
         return False, None
     
+    #hashes password inputted by user and stored salt value
     user_id, stored_salt, stored_hashed_password = result
     hashed_password = hash_password(password, stored_salt)
     
+    #successful login if hashed passwords match
     if hashed_password == stored_hashed_password:
         return True, user_id
     else:
