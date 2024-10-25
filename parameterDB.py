@@ -5,7 +5,7 @@ def create_parameters_db():
     conn = sqlite3.connect('parameters.db')
     cursor = conn.cursor()
     cursor.execute('''
-        CREATE TABLE parameters (
+        CREATE TABLE IF NOT EXISTS parameters (
             user_id INTEGER NOT NULL,
             parameter TEXT NOT NULL,
             value REAL NOT NULL,
