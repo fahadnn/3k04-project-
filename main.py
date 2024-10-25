@@ -1,6 +1,6 @@
 import string
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk
 from userDB import create_db, register_user, verify_user
 from parameterDB import create_parameters_db, save_parameters, get_parameters
 import sqlite3
@@ -105,7 +105,7 @@ class registration_frame(ttk.Frame):
             return "Error, password must contain at least one uppercase and lowercase letter!"
         
         if not any(char in string.punctuation for char in password):
-            return r"Error, password must contain at least one special character: !\"#$%&'()*+,-./:;<=>?@[\]^_{|}~`"
+            return "Error, password must contain at least one special character: !\"#$%&'()*+,-./:;<=>?@[\]^_{|}~`"
         
         if any(char.isspace() for char in password):
             return "Error, password cannot contain whitespaces!"
