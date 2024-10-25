@@ -218,10 +218,24 @@ class information_frame(ttk.Frame):
         self.parameters = ['Lower Rate Limit', 'Upper Rate Limit', 'Atrial Amplitude', 
                            'Atrial Pulse Width', 'Ventricular Amplitude', 
                            'Ventricular Pulse Width', 'VRP', 'ARP']
-        self.values = [1.0] * len(self.parameters)  # Default values
+        # Fetch existing values from the database or use defaults
+        self.values = self.fetch_existing_parameters()  # Fetch parameters from the database
         self.entries = []  # To store Entry widgets
         self.create_widgets()
 
+#returns the existing parameter values for the user, or returns 1.0 for default value if none xists
+    def fetch_existing_parameters(self):
+            user_id = self.master.user_id  # Get the logged-in user ID
+            if user_id is None:
+                return [1.0] * len(self.parameters)  # Default values if no user is logged in
+            
+            # Retrieve parameters from the database
+            existing_parameters = get_parameters(user_id)
+            if existing_parameters:
+                return [existing_parameters.get(param, 1.0) for param in self.parameters]
+            else:
+                return [1.0] * len(self.parameters)  # Default values if no parameters are found
+        
     def create_widgets(self):
         # Labels
         tk.Label(self, text="DCM Communication with Pacemaker:").grid(row=0, column=0, padx=10, pady=10, sticky="w")

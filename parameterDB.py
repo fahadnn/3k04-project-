@@ -62,6 +62,7 @@ def save_parameters(user_id, parameter_values):
 #get the parameter data for a specific user using the user id
 def get_parameters(user_id):
     """Retrieve parameters for a specific user."""
+    #setup database connection
     conn = sqlite3.connect('parameters.db')
     cursor = conn.cursor()
     
@@ -69,4 +70,6 @@ def get_parameters(user_id):
     parameters = cursor.fetchall()
     
     conn.close()
-    return parameters
+    #return parameters
+    # Convert the list of tuples into a dictionary
+    return {param: value for param, value in parameters}
