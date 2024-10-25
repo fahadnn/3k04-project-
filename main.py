@@ -104,8 +104,8 @@ class registration_frame(ttk.Frame):
         if not any(char.isupper() for char in password) or not any(char.islower() for char in password):
             return "Error, password must contain at least one uppercase and lowercase letter!"
         
-        if not any(char in string.punctuation for char in password): #used raw string to get rid of warning
-            return r"Error, password must contain at least one special character: !\"#$%&'()*+,-./:;<=>?@[\]^_{|}~`"
+        if not any(char in string.punctuation for char in password):
+            return "Error, password must contain at least one special character: !\"#$%&'()*+,-./:;<=>?@[\]^_{|}~`"
         
         if any(char.isspace() for char in password):
             return "Error, password cannot contain whitespaces!"
@@ -226,9 +226,9 @@ class information_frame(ttk.Frame):
 #returns the existing parameter values for the user, or returns 1.0 for default value if none xists
     def fetch_existing_parameters(self):
             user_id = self.master.user_id  # Get the logged-in user ID
-            #error handling to check that user is logged in and user_id is working correctly
             if user_id is None:
-                return "error, it appears that no user is logged in (user_id unavailable)" 
+                return [1.0] * len(self.parameters)  # Default values if no user is logged in
+            
             # Retrieve parameters from the database
             existing_parameters = get_parameters(user_id)
             if existing_parameters:
