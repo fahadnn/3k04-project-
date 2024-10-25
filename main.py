@@ -104,7 +104,7 @@ class registration_frame(ttk.Frame):
         if not any(char.isupper() for char in password) or not any(char.islower() for char in password):
             return "Error, password must contain at least one uppercase and lowercase letter!"
         
-        if not any(char in string.punctuation for char in password):
+        if not any(char in string.punctuation for char in password): #used raw string to get rid of warning
             return r"Error, password must contain at least one special character: !\"#$%&'()*+,-./:;<=>?@[\]^_{|}~`"
         
         if any(char.isspace() for char in password):
