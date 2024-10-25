@@ -44,7 +44,7 @@ class registration_frame(ttk.Frame):
         self.username_reg_entry = ttk.Entry(self)
         self.username_reg_entry.grid(row = 2, column = 1, pady = (0,15), sticky = "w"+"e")
         
-        #oassword labal and entry box
+        #password labal and entry box
         ttk.Label(self, text = "Password").grid(row = 3, column = 1, pady = None, sticky = "w")
         
         self.password_reg_entry = ttk.Entry(self, show = "*")
