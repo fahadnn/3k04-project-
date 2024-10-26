@@ -68,7 +68,7 @@ def verify_user(username, password):
     
     #hashes password inputted by user and stored salt value
     user_id, stored_salt, stored_hashed_password = result
-    hashed_password = hash_password(password, stored_salt)
+    hashed_password = _hash_password(password, stored_salt)
     
     #successful login if hashed passwords match
     if hashed_password == stored_hashed_password:
