@@ -91,7 +91,7 @@ class registration_frame(ttk.Frame):
             self.reg_status.config(text = error_message)
             
     #validates username and password inputs
-    def validate_registration(self, username, password, password_reentry):
+    def _validate_registration(self, username, password, password_reentry):
         if len(username) == 0:
              return "Error, username cannot be empty!"
          

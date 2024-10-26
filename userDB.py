@@ -20,7 +20,7 @@ def create_db(dbName="users.db"):
     conn.close()
     
 #hash password with salt added
-def hash_password(password, salt):
+def _hash_password(password, salt):
     return hashlib.sha256((salt + password).encode('utf-8')).hexdigest()
 
 # Registration validation and adds inputs to database
