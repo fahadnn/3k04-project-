@@ -44,7 +44,7 @@ def register_user(username, password):
     
     #creates salt and hashes password
     salt = os.urandom(16).hex()
-    hashed_password = hash_password(password, salt)
+    hashed_password = _hash_password(password, salt)
     
     #store user information
     cursor.execute("INSERT INTO users (username, salt, password) VALUES (?, ?, ?)", (username, salt, hashed_password))

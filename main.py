@@ -76,7 +76,7 @@ class registration_frame(ttk.Frame):
         password_reentry = self.password_reg_reentry.get()
         
         #changes registration status label is updates if there is an error with username or password input
-        error_message = self.validate_registration(username, password, password_reentry)
+        error_message = self._validate_registration(username, password, password_reentry)
         if error_message:
             self.reg_status.config(text = error_message)
             return
