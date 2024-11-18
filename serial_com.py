@@ -65,10 +65,9 @@ class serialCommunication:
         self.close_conn()
         return function_code, data
 
-# Example usage
 if __name__ == "__main__":
     comm = serialCommunication(port='COM3', baudrate=57600)
-    comm.send_packet(0x55, [1, 2, 3, 4])  # Example function code and data
+    comm.send_packet(0x55, [1, 2, 3, 4]) #test
     response = comm.receive_packet()
     if response:
         function_code, data = response
