@@ -28,6 +28,12 @@ class serialCommunication:
             self.ser.close()
             print("Serial connection closed!")
             
+    def checksum(self, data):
+        checksum = 0
+        for i in data:
+            checksum ^= i
+        return checksum
+            
     def create_packet(self, function_code, data):
         sync = 0x16
         packet = struct.pack('B', sync)
@@ -36,6 +42,9 @@ class serialCommunication:
         if data:
             packet += struct.pack(f'{len(data)}B', *data)
             
+        checksum = self.checksum(packet)
+        packet += struct.pack('B', checksum)
+        
         return packet
     
     def send_packet(self, function_code, data=None):
@@ -57,14 +66,23 @@ class serialCommunication:
             print("Invalid packet received")
             self.close_connection()
             return None
-
+        
         sync, function_code = struct.unpack('BB', packet[:1])
-        data = packet[2:]
+        data = packet[2:-1]
+        checksum = packet[-1]
+        checksum = struct.unpack('B', checksum)[0]
+        
+        calculated_checksum = self.calculate_checksum(packet[:-1])
+        if checksum != calculated_checksum:
+            print("Invalid checksum")
+            self.close_connection()
+            return None
 
         print(f"Received packet:\nFunction Code: {function_code}, Data: {data}")
         self.close_conn()
         return function_code, data
 
+#example testing
 if __name__ == "__main__":
     comm = serialCommunication(port='COM3', baudrate=57600)
     comm.send_packet(0x55, [1, 2, 3, 4]) #test
