@@ -82,9 +82,15 @@ class serialCommunication:
           #  self.close_conn()
             return None
         
+<<<<<<< HEAD
         sync, function_code = struct.unpack('BB', packet[:2])   # Unpack the syncbyte(h16) & function code(h49-echo) (should both be 1 byte)
         data = packet[2:-1] # Data is everything except the sync byte and checksum
         checksum = packet[-1:]
+=======
+        sync, function_code = struct.unpack('BB', packet[:2])
+        data = packet[2:-1]
+        checksum = packet[-1]
+>>>>>>> 0327eaf4e518692adf3ab968c2a8f4d2f6e616cb
         checksum = struct.unpack('B', checksum)[0]
         
         #validate checksum
