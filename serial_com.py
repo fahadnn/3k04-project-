@@ -67,7 +67,7 @@ class serialCommunication:
             self.close_connection()
             return None
         
-        sync, function_code = struct.unpack('BB', packet[:1])
+        sync, function_code = struct.unpack('BB', packet[:2])
         data = packet[2:-1]
         checksum = packet[-1]
         checksum = struct.unpack('B', checksum)[0]
