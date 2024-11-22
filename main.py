@@ -4,12 +4,14 @@ from tkinter import ttk
 from userDB import create_db, register_user, verify_user
 from parameterDB import create_parameters_db, save_parameters, get_parameters
 import sqlite3
+from serial_com import serialCommunication  # serial communication class is in serial_com.py
+
 
 class pacemaker(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title ("Pacemaker")
-        self.geometry ("700x600")
+        self.geometry ("1000x800")
         
         create_db() #initialize user login info DB
         create_parameters_db() #User Programmable parameters info DB
@@ -209,19 +211,33 @@ class information_frame(ttk.Frame):
 
         self.selected_button = None
         self.last_bg = None
-
+        self.pacing_mode = None #pacing mode selected
         # Add a communication-status label (active/Inactive)
         self.comm_status_label = ttk.Label(self, text="Inactive", foreground="red")
         self.comm_status_label.grid(row=0, column=1, padx=10, pady=10)  # Position with grid
+        
+        # Create serial communication object
+        self.comm = serialCommunication(port='COM3', baudrate=57600)  # hardcoded for comport3
+
+        # Check if communication is active and update the label
+        self.update_comm_status()
 
         # Data for parameter list
-        self.parameters = ['Lower Rate Limit', 'Upper Rate Limit', 'Atrial Amplitude', 
-                           'Atrial Pulse Width', 'Ventricular Amplitude', 
-                           'Ventricular Pulse Width', 'VRP', 'ARP']
+        self.parameters = ['Pacing Mode', 'Hysteresis', 'Rate Smoothing', 'Reaction Time', 'Response Factor', 
+                           'Recovery Time', 'Lower Rate Limit', 'Upper Rate Limit', 'Max Sensor Rate', 'VRP', 'ARP', 
+                           'PVARP', 'AV Amp Reg', 'AV Pulse Width', 'Atrial Sensitivity', 'Ventricular Sensitivity', ] 
+                          # 'Atrial Amplitude', 'Atrial Pulse Width', 
+                         #  'Ventricular Amplitude', 'Ventricular Pulse Width', 'AV Delay', ]
         # Fetch existing values from the database or use defaults
         self.values = self.fetch_existing_parameters()  # Fetch parameters from the database
         self.entries = []  # To store Entry widgets
         self.create_widgets()
+        
+    def update_comm_status(self):   #Method to check the communication status and update the label
+        if self.comm.is_connected():  #checks whether the serial communication is active
+            self.comm_status_label.config(text="Active", foreground="green")
+        else:
+            self.comm_status_label.config(text="Inactive", foreground="red")
 
 #returns the existing parameter values for the user, or returns 1.0 for default value if none xists
     def fetch_existing_parameters(self):
@@ -249,6 +265,10 @@ class information_frame(ttk.Frame):
         self.create_button('VOO', 1, 2)
         self.create_button('AAI', 1, 3)
         self.create_button('VVI', 1, 4)
+        self.create_button('AOOR', 1, 5)
+        self.create_button('VOOR', 1, 6)
+        self.create_button('AAIR', 1, 7)
+        self.create_button('VVIR', 1, 8)
         
         # Entry widgets for parameters
         for i, param in enumerate(self.parameters):
@@ -281,8 +301,8 @@ class information_frame(ttk.Frame):
         button.bind("<Enter>", lambda e: self.on_hover(button))
         button.bind("<Leave>", lambda e: self.on_leave(button))
 
-        # Configure button command
-        button.config(command=lambda btn=button: self.change_selected_button(btn))
+        # use lambda fxn to capture text of the button when it is clicked
+        button.config(command=lambda btn=button: self.change_selected_button(btn, text))
 
 # Change color only if the button is not selected, and its bg is not orange (selected button)
     def on_hover(self, button):
@@ -302,16 +322,55 @@ class information_frame(ttk.Frame):
     def set_inactive(self): 
         self.comm_status_label.config(text="Inactive", foreground="red")
          
-    def change_selected_button(self, button):
+    def change_selected_button(self, button, text):
         self.abc()
-        #set communication status with pacemaker to active when pacing mode button is pressed
-        self.comm_status_label.config(text="Active", foreground="green")
-        self.after(2000, self.set_inactive)
-
         if self.selected_button is not None:    #if button is clicked...
             self.selected_button.config(bg="lightgray") #set previously clicked buttons bg to lightgray default
+            #set communication status with pacemaker to active when pacing mode button is pressed
+            
         self.selected_button = button
         button.config(bg="orange") #change selected buttons bg to orange
+        self.send_pacing_mode(text)
+        self.update_comm_status()
+        
+    def send_pacing_mode(self, pacing_mode):    #send serial data depending on  pacing mode
+        # Map pacing modes to function codes or data
+        if pacing_mode == "AOO":
+            function_code = 0x01  # example function code
+            data = [1, 0, 0]  # example data for AOO mode
+            print("Pacing Mode Changed to AOO")
+        elif pacing_mode == "VOO":
+            function_code = 0x02
+            data = [0, 1, 0]
+            print("Pacing Mode Changed to VOO")
+        elif pacing_mode == "AAI":
+            function_code = 0x03
+            data = [1, 1, 0]
+            print("Pacing Mode Changed to AAI")
+        elif pacing_mode == "VVI":
+            function_code = 0x04
+            data = [0, 0, 1]
+            print("Pacing Mode Changed to VVI")
+        elif pacing_mode == "AOOR":
+            function_code = 0x05
+            data = [0, 1, 0]
+            print("Pacing Mode Changed to AOOR")
+        elif pacing_mode == "VOOR":
+            function_code = 0x06
+            data = [1, 1, 0]
+            print("Pacing Mode Changed to VOOR")
+        elif pacing_mode == "AAIR":
+            function_code = 0x07
+            data = [0, 0, 1]
+            print("Pacing Mode Changed to AAIR")
+        elif pacing_mode == "VVIR":
+            function_code = 0x08
+            data = [0, 0, 1]
+            print("Pacing Mode Changed to VVIR")
+        else:
+            print(f"Unknown pacing mode: {pacing_mode}")
+            return
+        self.comm.send_packet(function_code, data)  # Send packet using serialcommunication class
         
     def save_values(self):
         user_id = self.master.user_id  # Get the logged-in user ID
@@ -320,18 +379,65 @@ class information_frame(ttk.Frame):
             return  # Exit the method if user_id is invalid
         
         parameter_values = {}
+        #validate each parameters value
         for i, entry in enumerate(self.entries):
             param = self.parameters[i]
             value = entry.get()
-            try:
-                parameter_values[param] = float(value)  # Store each parameter and its value
-            except ValueError:
+            try:     # Attempt to convert the input to a float, handle invalid input
+                value = float(value)
+              #  parameter_values[param] = float(value)  # Store each parameter and its value
+            except ValueError:  # if cant convert to float, give error
                 print(f"Invalid input for {param}: {value}")
+                return #exit if any parameter inputted is not able to convert to float
+            
+        # Check if the value is within the valid range for the parameter by comapre to dictionary
+        if param in PARAMETER_RANGES:
+            min_val, max_val = PARAMETER_RANGES[param]
+            
+            if isinstance(min_val, (int, float)) and isinstance(max_val, (int, float)):
+                if not (min_val <= value <= max_val):
+                    print(f"Error: {param} value {value} is out of range ({min_val}-{max_val})")
+                    return  # Prevent saving if value is out of range
+            elif isinstance(min_val, str) and isinstance(max_val, str):
+                # For categorical values (e.g., Pacing Mode)
+                if value not in [min_val, max_val]:
+                    print(f"Error: {param} value {value} is not valid. Must be one of {min_val}, {max_val}")
+                    return  # Prevent saving if value is invalid
 
+        parameter_values[param] = value  # Store the validated value
+
+        # If all parameters are valid, save them to the database
         save_parameters(user_id, parameter_values)  # Save all parameters at once
         print("Parameter values saved to database.")
 
+
+    PARAMETER_RANGES = {
+        'Pacing State': (0, 1),  # Example range (min, max)
+        'Pacing Mode': ('AOO', 'VOO'),  # no range needed for pacing modes bc change by button press
+        'Hysteresis': (0, 50),  # Assuming hysteresis is in percentage, 0-100%
+        'Rate Smoothing': (0, 25),  # 0-25%
+        'Reaction Time': (10, 50),  # msec
+        'Response Factor': (1, 16), 
+        'Recovery Time': (2, 16),   # minutes
+        'Lower Rate Limit': (30, 50),   # range from table 7 bpm
+        'Upper Rate Limit': (50, 175),  # Example for rate limit (bpm)
+        'Max Sensor Rate': (50, 175),   # ppm/bpm
+        'VRP': (150, 500),  # Ventricular refractory period range (ms)
+        'ARP': (150, 500),  # Atrial refractory period range (ms)
+        'PVARP': (150, 500),    #ms
+        'AV Amp Reg': (0, 7.0), #volts (off, 0.5-3.2v, 3.5-7.0v)
+        'AV Pulse Width': (0.1, 1.0),    #msec but diff values for a and V
+        'Atrial Sensitivity': (0.25, 0.75),  #0.25,0.5,0.75 mVolts
+        'Ventricular Sensitivity': (1.0, 10),    #1.0-10 mVolts
         
+        
+        'Atrial Amplitude': (0, 10),  # Example for amplitude (volts)
+        'Atrial Pulse Width': (0, 10),  # Example for pulse width (ms)
+        'Ventricular Amplitude': (0, 10),  # Similar for ventricular
+        'Ventricular Pulse Width': (0, 10),
+        'AV Delay': (100, 300),  # AV delay range (ms)
+    }
+   
         
     '''    
     def save_values(self):
