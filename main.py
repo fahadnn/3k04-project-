@@ -1,4 +1,5 @@
 import string
+import threading
 import tkinter as tk
 from tkinter import ttk
 from userDB import create_db, register_user, verify_user
@@ -209,6 +210,9 @@ class information_frame(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
 
+        #for egram-related elements
+        self.create_egram_selection()
+        
         self.selected_button = None
         self.last_bg = None
         self.pacing_mode = None #pacing mode selected
@@ -459,6 +463,36 @@ class information_frame(ttk.Frame):
                 print(f"Database error: {e}")  # Handle the IntegrityError gracefully
         print("Parameter values saved to database.")
     '''       
+    
+    def create_egram_selection(self):
+        #UI components for requesting and displaying ergam data
+        
+        ttk.Label(self, text = "Egram Data").grid(row=20, column=0, pady=10) 
+        
+        #request egram button
+        self.request_eram_button = ttk.Button(self, text="Request Egram", command=self.start_egram)
+        self.request_eram_button.grid(row=21, column=0, pady=10)
+        
+        #stop egram button
+        self.stop_egram_button = ttk.Button(self, text="Stop Egram", command=self.stop_egram)
+        
+        #egram data disp.
+        self.egram_data_label = ttk.Label(self, text="Egram data here...")
+        self.egram_data_label.grid(row=22, column=0, columnspan=2)
+        
+    def start_egram(self):
+        #send request to start egram data transmission.
+        self.master.comm.request_egram()
+        threading.Thread(target=self.master.comm.receive_egram_continuously, args=(self.display_egram_data,), daemon=True).start()
+    def stop_egram(self):
+        
+        self.master.comm.stop_egram()
+        
+    def display_egram_data(self, data):
+        if data:
+            self.egram_data_label.config(text=f"V raw: {data['v_raw']}, F marker: {data['f_marker']}")
+        
+        
 if __name__ == "__main__":
     app = pacemaker()
     app.mainloop()

@@ -1,6 +1,7 @@
 import serial
 import struct
 import time
+import threading
 #import serial.tools.list_ports  #Used to check available com ports
 
 
@@ -158,7 +159,30 @@ class serialCommunication:
         
         return {"v_raw": v_raw, "f_marker": f_marker}
     
+    def receive_egram_continuously(self, callback):
+        #continuously receive egram data and call the callback function to update the GUI
         
+        if not self.ser or not self.ser.is_open:
+            self.open_conn()
+            
+        if not self.ser or not self.ser.is_open:
+            print("Failed to open serial connection. Cannot receive egram data.")
+            return
+        
+        print("Starting to receive egram data...")
+        
+        try:
+            while True:
+                packet = self.receive_packet()
+                if packet:
+                    egram_data = self.parse_egram_data(packet)
+                    if egram_data:
+                        callback(egram_data) #pass data to callack func
+                time.sleep(0.1)
+        except KeyboardInterrupt:
+            print("Egram reception interrupeted") 
+        finally:
+            self.close_conn()
             
             
     
