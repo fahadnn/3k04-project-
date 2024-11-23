@@ -125,6 +125,43 @@ class serialCommunication:
 
         finally:
             self.close_conn() #for testing
+    def request_egram(self):
+    #request egram data from the pacemaker by sending k_egram function code (0x10)
+    
+        function_code = 0x10
+        data = []
+        self.send_packet(function_code, data)
+        print("Requested egram data from pacemaker")
+        
+    def stop_egram(self):
+        #stop egram data transmission by sendinf the k_estop function code (0x11)
+        
+        function_code = 0x11
+        data = []
+        self.send_packet(function_code, data)
+        print("Sent stop egram request to pacemaker")
+        
+    def parse_egram_data(self, packet):
+        #Parse egram data received from the pacemaker
+        if len(packet) < 6:
+            print("Invalid egram packet received")
+            return None
+        
+        sync,fn_code = struct.unpack('BB', packet[:2]) 
+        v_raw, f_marker = struct.unpack('HH', packet[2:6])
+        checksum_received = packet[-1] 
+        
+        calculated_checksum = self.checksum(packet[:-1])    # Checksum excluding the checksum byte
+        if checksum_received != calculated_checksum:
+            print("Invalid checksum for egram packet")
+            return None
+        
+        return {"v_raw": v_raw, "f_marker": f_marker}
+    
+        
+            
+            
+    
 
 #example testing
 
