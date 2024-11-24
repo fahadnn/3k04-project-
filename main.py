@@ -3,14 +3,14 @@ import tkinter as tk
 from tkinter import ttk
 from userDB import create_db, register_user, verify_user
 from parameterDB import create_parameters_db, save_parameters, get_parameters
-from serial_com import serialCommunication  # serial communication class is in serial_com.py
-
+from serial_com import serialCommunication 
 
 class pacemaker(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title ("Pacemaker")
-        self.geometry ("1000x850")
+        self.title ("Pacemaker GUI")
+        # Set the window size and position it at the top-left corner
+        self.geometry("1000x800+0+0")  # width=1200, height=800, X=0, Y=0
         
         create_db() #initialize user login info DB
         create_parameters_db() #User Programmable parameters info DB
@@ -134,10 +134,10 @@ class login_frame (ttk.Frame):
         self.grid_columnconfigure(1, weight=1)
         
         # Add labels, entries, and buttons with grid layout
-        ttk.Label(self, text="Welcome to DCM User Interface for Pacemaker").grid(row=0, column=0, columnspan=2, pady=10, padx=20, sticky="nsew")
-        ttk.Label(self, text="Username").grid(row=1, column=0, columnspan=2, pady=10)
-        ttk.Label(self, text="Password").grid(row=3, column=0, columnspan=2, pady=10)
-        
+        ttk.Label(self, text="Welcome to DCM User Interface for Pacemaker", foreground="red", font=("Helvetica", 22, "bold")).grid(row=0, column=0, columnspan=2, pady=10, padx=20, sticky="nsew")
+        ttk.Label(self, text="Username", foreground="red", font=("Helvetica", 14, "bold")).grid(row=1, column=0, columnspan=2, pady=10)
+        ttk.Label(self, text="Password", foreground="red", font=("Helvetica", 14, "bold")).grid(row=3, column=0, columnspan=2, pady=10)
+       
         # Language menu
         language_menu = tk.Menu(self, tearoff=0)
         languages = ["English", "Danish", "Dutch", "French", "German", "Spanish", "Italian", "Swedish"]
@@ -156,13 +156,30 @@ class login_frame (ttk.Frame):
         self.password_entry = ttk.Entry(self, show="*")
         self.password_entry.grid(row=4, column=0, columnspan=2, pady=10)
         
-        # Login and Register buttons
-        self.login_button = ttk.Button(self, text="Login", command=self.login_user)
+        # Create a Style object
+        self.style = ttk.Style()
+        
+        # Configure the style for Login Button (Red)
+        self.style.configure("Login.TButton",
+                             background="yellow",
+                             foreground="red",
+                             font=("Helvetica", 12, "bold"),
+                             padding=10)
+        
+        # Configure the style for Register Button (Yellow)
+        self.style.configure("Register.TButton",
+                             background="yellow",
+                             foreground="red",
+                             font=("Helvetica", 12, "bold"),
+                             padding=10)
+        
+        # Create Login Button
+        self.login_button = ttk.Button(self, text="Login", style="Login.TButton", command=self.login_user)
         self.login_button.grid(row=5, column=0, pady=20)
-
-         # Register button that switches to the registration frame
-        self.register_button = ttk.Button(self, text="Register", command=lambda: master.switch_frame(registration_frame))
-        self.register_button.grid(row=5, column=1, pady=20)
+        
+        # Create Register Button
+        self.register_button = ttk.Button(self, text="Register", style="Register.TButton", command=lambda: master.switch_frame(registration_frame))
+        self.register_button.grid(row=5, column=1, pady=20)        
         
         # Label to display login status (successful or unsuccessful)
         self.login_status = ttk.Label(self, text = " ")
@@ -227,9 +244,9 @@ class information_frame(ttk.Frame):
     def update_comm_status(self):       # Opens serial port then Check the communication status and updates the label
         self.comm.open_conn()           # Open serial port
         if (self.comm.is_connected()):  # returns True if connected
-            self.comm_status_label.config(text="Active", foreground="green")  
+            self.comm_status_label.config(text="Active", foreground="green", font=("Helvetica", 12, "bold"))  
         else:
-            self.comm_status_label.config(text="Inactive", foreground="red")
+            self.comm_status_label.config(text="Inactive", foreground="red", font=("Helvetica", 12, "bold"))
 
     def fetch_existing_parameters(self):   # returns the saved user parameter values, or defaults to 0
         user_id = self.master.user_id  # Get the logged-in user ID
@@ -243,50 +260,53 @@ class information_frame(ttk.Frame):
         
     def create_widgets(self):
         # Labels
-        tk.Label(self, text="DCM Communication with Pacemaker:").grid(row=0, column=0, padx=10, pady=10, sticky="w")
-        self.comm_status_label = ttk.Label(self, text="Inactive", foreground="red") # communication-status label
-        self.comm_status_label.grid(row=0, column=1, padx=10, pady=10)
-        tk.Label(self, text="Pacing Mode").grid(row=1, column=0, padx=10, pady=10, sticky="w")
-        tk.Label(self, text="Graph of Pacing Mode").grid(row=2, column=0, padx=10, pady=10, sticky="w")
-        tk.Label(self, text="Programmable Parameters").grid(row=5, column=0, padx=10, pady=10, sticky="w")
+        tk.Label(self, text="DCM Communication with Pacemaker: ", font=("Helvetica", 16, "bold")).grid(row=0, column=0, columnspan=4, padx=5, pady=5, sticky="w")        
+        self.comm_status_label = ttk.Label(self, text="Inactive", foreground="red", font=("Helvetica", 14, "bold")) # communication-status label
+        self.comm_status_label.grid(row=0, column=5, columnspan = 2, padx=10, pady=6)
+        tk.Label(self, text="Pacing Mode: ", font=("Helvetica", 14, "bold")).grid(row=1, column=0, columnspan=3, padx=2, pady=2)
+        tk.Label(self, text="Graph of Pacing Mode: ", font=("Helvetica", 14, "bold")).grid(row=2, column=3, columnspan=4, padx=2, pady=2)
+        ttk.Label(self, text="Programmable Parameters: ", foreground="red", font=("Helvetica", 14, "bold")).grid(row=5, column=0, columnspan=2, padx=2, pady=2, sticky="w")
         
-        # Pacing Mode Buttons
-        self.create_button('AOO', 1, 1)
-        self.create_button('VOO', 1, 2)
-        self.create_button('AAI', 1, 3)
-        self.create_button('VVI', 1, 4)
-        self.create_button('AOOR', 1, 5)
-        self.create_button('VOOR', 1, 6)
-        self.create_button('AAIR', 1, 7)
-        self.create_button('VVIR', 1, 8)
+        # Create Pacing Mode Buttons
+        pacing_modes = ['AOO', 'VOO', 'AAI', 'VVI', 'AOOR', 'VOOR', 'AAIR', 'VVIR', 'DOOR', 'DDDR']
+        for idx, mode in enumerate(pacing_modes):
+            self.create_button(mode, 1, idx + 4, width=5, height=1, font=("Helvetica", 12, "bold"), padx=1, pady=2)
+
         # Save Button used to store values in the database
-        save_button = tk.Button(self, text="Save Values", command=self.save_values)
-        save_button.grid(row=6+len(self.parameters), column=0, columnspan=2, pady=10)
-        # Send button used to send packet of data, then ask for echo and receive the echo for confirmation
-        send_button = tk.Button(self, text="Send Data", command=self.send_values)
-        send_button.grid(row=6+len(self.parameters), column=2, columnspan=2, pady=10)
+        save_button = tk.Button(self, text="Save Values", command=self.save_values,
+                        relief="raised", bd=3, font=("Helvetica", 12),
+                        padx=2, pady=8, bg="lightblue", fg="red")
+        save_button.grid(row=8 + len(self.parameters), column=1, padx=8, pady=4)   
+        # Send_data button used to send packet of data, then ask for echo and receive the echo for confirmation
+        send_button = tk.Button(self, text="Send Data", command=self.send_values,
+                        relief="raised", bd=3, font=("Helvetica", 12),
+                        padx=2, pady=8, bg="lightblue", fg="red")
+        send_button.grid(row=8 + len(self.parameters), column=0, padx=8, pady=4)
         
-        for i, param in enumerate(self.parameters):         # Create Textbox's for inputting Parameter Values
-            tk.Label(self, text=param).grid(row=6+i, column=0, padx=10, pady=5, sticky="w")
+        for i, param in enumerate(self.parameters):         # Create Labels & Textbox's for inputting Parameter Values
+            tk.Label(self, text=param, font=("Helvetica", 12, "bold")).grid(row=6+i, column=0, padx=5, pady=5, sticky="w")
             entry = tk.Entry(self)
             entry.insert(0, str(self.values[i]))            # Fill Textbox's with saved values for the user
-            entry.grid(row=6+i, column=1, padx=10, pady=5)
+            entry.grid(row=6+i, column=1, padx=5, pady=5)
             self.entries.append(entry)
 
-    def create_button(self, text, row, col):    # Create pacing mode buttons to choose a mode
+    def create_button(self, text, row, col, width, height, font, padx, pady):    # Create pacing mode buttons to choose a mode
         button = tk.Button(
             self,
             text=text,
-            fg='black',
-            bg='lightgray',                               # Default background color
+            width=width,
+            height=height,
+            font=font,
+            fg='red',
+            bg='lightgray',                       # Default background color
             activebackground='#B7E3F9',
             activeforeground='black',
             highlightthickness=0,
-            relief='raised',                              # Make the button look more clickable
-            padx=10,                                      # Add some padding to make it larger
-            pady=5
+            relief='raised',                      # Make the button look more clickable
+            padx=padx,                            # Add some padding to make it larger
+            pady=pady
         )
-        button.grid(row=row, column=col, padx=5, pady=5)  # Use grid for button placement
+        button.grid(row=row, column=col)  # Use grid for button placement
         # Bind mouse enter and leave events for hover effect
         button.bind("<Enter>", lambda e: self.on_hover(button))
         button.bind("<Leave>", lambda e: self.on_leave(button))
@@ -304,7 +324,7 @@ class information_frame(ttk.Frame):
     def change_selected_button(self, button, text):     # Change most recently selected button to orange
         self.abc()                                      # print a message when pacing mode is changed
         if self.selected_button is not None:            # if button is clicked...
-            self.selected_button.config(bg="lightgray") # set previously clicked buttons bg to lightgray default      
+            self.selected_button.config(bg="lightgray") # set previously clicked buttons bg to gray default      
         self.selected_button = button                   # Make recently clicked button the selected_button
         button.config(bg="orange")                      # change selected_buttons bg to orange
         self.set_pacing_mode(text)          # Pass text of recently clicked button
@@ -421,10 +441,5 @@ class information_frame(ttk.Frame):
 if __name__ == "__main__":
     app = pacemaker()
     app.mainloop()
-    
-    
-    
-    #add save button for programmable parameters list - done
+
     #perform error handling for if programmable parameter data enteres is out of range
-    #make the pacing mode buttons more obvious that they are buttons - done
-    #add programmable parameters into the userDB database and attach to each user - done
