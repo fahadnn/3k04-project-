@@ -497,7 +497,6 @@ class information_frame(ttk.Frame):
             daemon=True,
         ).start()
     
-
     def stop_egram(self):
         """
         Stop receiving egram data.
