@@ -460,3 +460,4 @@ if __name__ == "__main__":
     app.mainloop()
 
     #perform error handling for if programmable parameter data enteres is out of range
+    '''
