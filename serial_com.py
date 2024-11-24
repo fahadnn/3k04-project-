@@ -2,6 +2,7 @@ import serial
 import struct
 import time
 import serial.tools.list_ports  # Used to check available com ports
+import os   #operating system
 
 class serialCommunication:
     def __init__(self, port = "COM3", baudrate = 57600, timeout = 1):
@@ -14,13 +15,24 @@ class serialCommunication:
         
     def list_available_ports(self):
         """Prints all available serial ports for the user to choose from."""
-        ports = serial.tools.list_ports.comports()
-        if not ports:
-            print("No available serial ports were found.")
+        if os.name == 'posix':  # Check if the system is Linux (Ubuntu or similar)
+            # List all files in /dev and filter for serial port names (ttyUSB or ttyACM)
+            ports = [port for port in os.listdir('/dev') if port.startswith('tty') and (port.startswith('ttyUSB') or port.startswith('ttyACM'))]
+            if not ports:
+                print("No available serial ports were found.")
+            else:
+                print("Available serial ports: ")
+                for port in ports:
+                    print(f"/dev/{port}")  # Display ports found in /dev
         else:
-            print("Available serial ports: ")
-            for port, desc, hwid in sorted(ports):
-                print(f"{port}: {desc} (ID: {hwid})\n")
+            # Fallback for non-Linux systems (Windows, macOS)
+            ports = serial.tools.list_ports.comports()
+            if not ports:
+                print("No available serial ports were found.")
+            else:
+                print("Available serial ports: ")
+                for port, desc, hwid in sorted(ports):
+                    print(f"{port}: {desc} (ID: {hwid})")
            
     def open_conn(self):
         try:
