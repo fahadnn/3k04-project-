@@ -397,47 +397,60 @@ class information_frame(ttk.Frame):
             param = self.parameters[i]
             value = entry.get()
             try:     # Attempt to convert the input to a float, handle invalid input by exiting save
-                value = int(value)
+                value = float(value)
             except ValueError:
                 print(f"Invalid input for {param}: {value}")
                 return
+            if (i == 0) and (not (0 <= value <= 50)):           # Check if the value is within the valid range (50 <= value <= 125)
+                print(f"Error: '{param}' value '{value}' is out of the valid range (0-50). Please input a valid value before saving.")
+                return                                          # Prevent saving if value is out of the range
+            if (i == 1) and (not (0 <= value <= 25)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (0-25). Please input a valid value before saving.")
+                return
+            if (i == 2) and (not (10 <= value <= 50)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (10-50). Please input a valid value before saving.")
+                return
+            if (i == 3) and (not (1 <= value <= 16)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (1-16). Please input a valid value before saving.")
+                return
+            if (i == 4) and (not (2 <= value <= 16)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (2-16). Please input a valid value before saving.")
+                return
+            if (i == 5) and (not (30 <= value <= 50)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (30-50). Please input a valid value before saving.")
+                return
+            if (i == 6) and (not (50 <= value <= 175)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (50-175). Please input a valid value before saving.")
+                return
+            if (i == 7) and (not (50 <= value <= 175)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (50-175). Please input a valid value before saving.")
+                return
+            if (i == 8) and (not (150 <= value <= 500)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (150-500). Please input a valid value before saving.")
+                return
+            if (i == 9) and (not (150 <= value <= 500)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (150-500). Please input a valid value before saving.")
+                return
+            if (i == 10) and (not (150 <= value <= 500)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (150-500). Please input a valid value before saving.")
+                return
+            if (i == 11) and (not (0 <= value <= 7.0)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (0-7.0). Please input a valid value before saving.")
+                return    
+            if (i == 12) and (not (0.1 <= value <= 1.0)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (0.1-1.0). Please input a valid value before saving.")
+                return
+            if (i == 13) and (not (0.25 <= value <= 0.75)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (0.25-0.75). Please input a valid value before saving.")
+                return
+            if (i == 14) and (not (1.0 <= value <= 10)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (1.0-10). Please input a valid value before saving.")
+                return
             
-        # Check if the value is within the valid range for the parameter by comapre to dictionary
-        if param in self.PARAMETER_RANGES:
-            min_val, max_val = self.PARAMETER_RANGES[param]
-            if isinstance(min_val, int) and isinstance(max_val, int):   # Ensure the value is within the valid range
-                if not (min_val <= value <= max_val):
-                    print(f"Error: '{param}' value '{value}' is out of range ({min_val}-{max_val})\nInput a valid value before saving.")
-                    return                                                  # Prevent saving if value is out of range
-                
-            elif isinstance(min_val, int) and isinstance(max_val, int):
-                # For categorical values (we dont use any), ensure it's valid
-                if value not in [min_val, max_val]:
-                    print(f"Error: {param} value {value} is not valid. Must be one of {min_val}, {max_val}")
-                    return                              # Prevent saving if value is invalid
-        
         parameter_values[param] = value                 # Store the validated parameter value
         save_parameters(user_id, parameter_values)      # If all parameters are valid, save them to the database
         print("Parameter values saved to database.")
-        
-    PARAMETER_RANGES = {            # Dictionary for checking if parameter values are in range
-        'Hysteresis': (0, 50),                  # Assuming hysteresis is in percentage, 0-100%
-        'Rate Smoothing': (0, 25),              # 0-25%
-        'Reaction Time': (10, 50),              # msec
-        'Response Factor': (1, 16), 
-        'Recovery Time': (2, 16),               # minutes
-        'Lower Rate Limit': (30, 50),           # range from table 7 bpm
-        'Upper Rate Limit': (50, 175),          # Example for rate limit (bpm)
-        'Max Sensor Rate': (50, 175),           # ppm/bpm
-        'VRP': (150, 500),                      # Ventricular refractory period range (ms)
-        'ARP': (150, 500),                      # Atrial refractory period range (ms)
-        'PVARP': (150, 500),                    #ms
-        'AV Amp Reg': (0, 7.0),                 #volts (off, 0.5-3.2v, 3.5-7.0v)
-        'AV Pulse Width': (0.1, 1.0),           #msec but diff values for a and V
-        'Atrial Sensitivity': (0.25, 0.75),     #0.25,0.5,0.75 mVolts
-        'Ventricular Sensitivity': (1.0, 10),   #1.0-10 mVolts
-    }
-          
+
 if __name__ == "__main__":
     app = pacemaker()
     app.mainloop()
