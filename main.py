@@ -5,6 +5,9 @@ from tkinter import ttk
 from userDB import create_db, register_user, verify_user
 from parameterDB import create_parameters_db, save_parameters, get_parameters
 from serial_com import serialCommunication 
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 class pacemaker(tk.Tk):
     def __init__(self):
@@ -232,8 +235,8 @@ class information_frame(ttk.Frame):
         self.comm = serialCommunication()   # Init. Object of serialCommunication Class
         self.pacing_mode = 0                # Default pacing mode is 0 (no pacing) 
         #for egram-related elements
-        self.create_egram_selection()
-        
+        self.create_egram_section()
+        self.egram_data = []
         self.selected_button = None
         self.last_bg = None
         # Names for Programmable Parameter list
@@ -454,10 +457,92 @@ class information_frame(ttk.Frame):
         parameter_values[param] = value                 # Store the validated parameter value
         save_parameters(user_id, parameter_values)      # If all parameters are valid, save them to the database
         print("Parameter values saved to database.")
-    '''       
+        
+    def create_egram_section(self):
+        #UI components for requesting and displaying egram data
+        ttk.Label(self, text="Egram Data").grid(row=20, column=0, pady=10)
+
+        # Buttons for starting and stopping egram
+        ttk.Button(self, text="Request Egram", command=self.start_egram).grid(row=21, column=0)
+        ttk.Button(self, text="Stop Egram", command=self.stop_egram).grid(row=21, column=1)
+
+        # Matplotlib figure for plotting egram data
+        self.fig, self.ax = plt.subplots(figsize=(6, 3))
+        self.ax.set_title("Egram Signals")
+        self.ax.set_xlabel("Time")
+        self.ax.set_ylabel("Signal")
+
+        # Embed the plot in Tkinter
+        self.canvas = FigureCanvasTkAgg(self.fig, self)
+        self.canvas.get_tk_widget().grid(row=22, column=0, columnspan=2)
+
+    def start_egram(self):
+        """
+        Start receiving egram data and update the plot in real-time.
+        """
+        self.master.comm.request_egram()
+        threading.Thread(target=self.master.comm.receive_egram_continuously, args=(self.update_egram_plot,), daemon=True).start()
+
+    def stop_egram(self):
+        """
+        Stop receiving egram data.
+        """
+        self.master.comm.stop_egram()
+
+    def update_egram_plot(self, data):
+        """
+        Update the egram plot with new data.
+        """
+        self.egram_data.append(data["v_raw"])  # Append new V raw value
+        if len(self.egram_data) > 100:  # Keep the last 100 points
+            self.egram_data.pop(0)
+        
+        self.ax.clear()
+        self.ax.plot(self.egram_data, label="Ventricular Raw Signal")
+        self.ax.legend()
+        self.canvas.draw()
+        
+    def plot_data(self):
+    #Continuously receive egram data and animate the plot.
+    
+        self.master.comm.request_egram()  # Request egram data
+        self.plot_running = True  # Control flag for the loop
+
+        # Create an animation function
+        def update_plot(i):
+            if not self.plot_running:
+                raise StopIteration  # Exit the loop gracefully
+
+            packet = self.master.comm.receive_packet()  # Read a packet
+            if packet:
+                egram_data = self.master.comm.parse_egram_data(packet)
+                if egram_data:
+                    self.egram_data.append(egram_data["v_raw"])  # Append new V raw value
+                    if len(self.egram_data) > 100:  # Keep the last 100 points
+                        self.egram_data.pop(0)
+
+            # Update the plot
+            self.ax.clear()
+            self.ax.plot(self.egram_data, label="Ventricular Raw Signal")
+            self.ax.legend()
+            self.canvas.draw()
+
+        # Start animation loop
+        ani = animation.FuncAnimation(self.fig, update_plot, interval=100)  # Update every 100ms
+        self.canvas.draw()
+
+    def stop_plot(self):
+        """
+        Stop receiving egram data and send the stop egram request.
+        """
+        self.plot_running = False  # Stop the plot loop
+        self.master.comm.stop_egram()  # Send the stop egram function code
+        print("Egram data reception stopped.")
+
+        
 if __name__ == "__main__":
     app = pacemaker()
     app.mainloop()
 
     #perform error handling for if programmable parameter data enteres is out of range
-    '''
+    
