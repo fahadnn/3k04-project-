@@ -285,12 +285,12 @@ class information_frame(ttk.Frame):
         save_button = tk.Button(self, text="Save Values", command=self.save_values,
                         relief="raised", bd=3, font=("Helvetica", 12),
                         padx=2, pady=8, bg="lightblue", fg="red")
-        save_button.grid(row=8 + len(self.parameters), column=1, padx=8, pady=4)   
+        save_button.grid(row=3 + len(self.parameters), column=5, padx=8, pady=4)   
         # Send_data button used to send packet of data, then ask for echo and receive the echo for confirmation
         send_button = tk.Button(self, text="Send Data", command=self.send_values,
                         relief="raised", bd=3, font=("Helvetica", 12),
                         padx=2, pady=8, bg="lightblue", fg="red")
-        send_button.grid(row=8 + len(self.parameters), column=0, padx=8, pady=4)
+        send_button.grid(row=3 + len(self.parameters), column=4, padx=8, pady=4)
         
         for i, param in enumerate(self.parameters):         # Create Labels & Textbox's for inputting Parameter Values
             tk.Label(self, text=param, font=("Helvetica", 12, "bold")).grid(row=6+i, column=0, padx=5, pady=5, sticky="w")
@@ -478,12 +478,24 @@ class information_frame(ttk.Frame):
         self.canvas = FigureCanvasTkAgg(self.fig, self)
         self.canvas.get_tk_widget().grid(row=22, column=0, columnspan=2)
 
-    def start_egram(self):
+    '''def start_egram(self):
         """
         Start receiving egram data and update the plot in real-time.
         """
         self.master.comm.request_egram()
-        threading.Thread(target=self.master.comm.receive_egram_continuously, args=(self.update_egram_plot,), daemon=True).start()
+        threading.Thread(target=self.master.comm.receive_egram_continuously, args=(self.update_egram_plot,), daemon=True).start()'''
+        
+    def start_egram(self):
+        """
+        Start receiving egram data and update the plot in real-time.
+        """
+        self.comm.request_egram()  # Access comm directly
+        threading.Thread(
+            target=self.comm.receive_egram_continuously,
+            args=(self.update_egram_plot,),
+            daemon=True,
+        ).start()
+    
 
     def stop_egram(self):
         """
