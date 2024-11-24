@@ -131,42 +131,13 @@ class serialCommunication:
                 time.sleep(0.2)
         finally:
             self.close_conn() #for testing
-            
-    def send_egram_packet(self, function_code, pacing_mode):
-        #Send an egram-specific packet to request egram data from the pacemaker.
-        
-        sync = 0x16  # Sync byte (22 in decimal)
-        packet = struct.pack('B', sync)  # Pack sync as 1 byte
-        packet += struct.pack('B', function_code)  # Pack function code as 1 byte
-        packet += struct.pack('B', pacing_mode)  # Pack pacing mode as 1 byte
-
-        # Fill the remaining packet with zeros for the egram-specific format
-        padding_data = [0] * 33  # Remaining 33 bytes (37 total bytes - 3 already added)
-        packet += struct.pack(f'{len(padding_data)}B', *padding_data)
-
-        # Add checksum at the end
-        checksum = self.checksum(packet)
-        packet += struct.pack('B', checksum)
-
-        # Write the packet to the serial port
-        if not self.ser or not self.ser.is_open:
-            self.open_conn()
-
-        if self.ser is None or not self.ser.is_open:
-            print("Failed to open serial port. Cannot send egram packet.")
-            return
-
-        self.ser.write(packet)
-        print(f"Sent egram packet: {packet}")
-
-    
-    def request_egram(self, pacing_mode=0):
+    def request_egram(self):
     #request egram data from the pacemaker by sending k_egram function code (0x10)
-    
-        function_code = 0x10  # k_egram
-        self.send_egram_packet(function_code, pacing_mode)
-        print("Requested egram data from Simulink pacemaker.")
-        
+        function_code = 0x10
+        #data = []
+        self.send_packet(function_code, data, pacing_mode)
+        print("Requested egram data from pacemaker")
+         
     def stop_egram(self):
         #stop egram data transmission by sendinf the k_estop function code (0x11)
         

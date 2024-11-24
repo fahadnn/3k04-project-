@@ -14,7 +14,7 @@ class pacemaker(tk.Tk):
         super().__init__()
         self.title ("Pacemaker GUI")
         # Set the window size and position it at the top-left corner
-        self.geometry("1000x800+0+0")  # width=1200, height=800, X=0, Y=0
+        self.geometry("1100x750+0+0")  # width=1200, height=800, X=0, Y=0
         
         create_db() #initialize user login info DB
         create_parameters_db() #User Programmable parameters info DB
@@ -237,7 +237,6 @@ class information_frame(ttk.Frame):
         self.comm = serialCommunication()   # Init. Object of serialCommunication Class
         self.pacing_mode = 0                # Default pacing mode is 0 (no pacing) 
         #for egram-related elements
-        self.create_egram_section()
         self.egram_data = []
         self.selected_button = None
         self.last_bg = None
@@ -275,6 +274,17 @@ class information_frame(ttk.Frame):
         tk.Label(self, text="Pacing Mode: ", font=("Helvetica", 14, "bold")).grid(row=1, column=0, columnspan=3, padx=2, pady=2)
         tk.Label(self, text="Graph of Pacing Mode: ", font=("Helvetica", 14, "bold")).grid(row=2, column=3, columnspan=4, padx=2, pady=2)
         ttk.Label(self, text="Programmable Parameters: ", foreground="red", font=("Helvetica", 14, "bold")).grid(row=5, column=0, columnspan=2, padx=2, pady=2, sticky="w")
+        #UI components for requesting and displaying egram data
+        ttk.Label(self, text="Egram Data").grid(row=20, column=0, pady=10)
+
+        # Matplotlib figure for plotting egram data
+        self.fig, self.ax = plt.subplots(figsize=(6, 4))
+        self.ax.set_title("Egram Signals")
+        self.ax.set_xlabel("Time")
+        self.ax.set_ylabel("Signal")
+        # Embed the plot in Tkinter
+        self.canvas = FigureCanvasTkAgg(self.fig, self)
+        self.canvas.get_tk_widget().grid(row=3, column=4, columnspan=20, rowspan=20)
         
         # Create Pacing Mode Buttons
         pacing_modes = ['AOO', 'VOO', 'AAI', 'VVI', 'AOOR', 'VOOR', 'AAIR', 'VVIR', 'DOOR', 'DDDR']
@@ -285,12 +295,21 @@ class information_frame(ttk.Frame):
         save_button = tk.Button(self, text="Save Values", command=self.save_values,
                         relief="raised", bd=3, font=("Helvetica", 12),
                         padx=2, pady=8, bg="lightblue", fg="red")
-        save_button.grid(row=3 + len(self.parameters), column=5, padx=8, pady=4)   
+        save_button.grid(row=6 + len(self.parameters),column=0, columnspan=2, pady=20)   
         # Send_data button used to send packet of data, then ask for echo and receive the echo for confirmation
         send_button = tk.Button(self, text="Send Data", command=self.send_values,
                         relief="raised", bd=3, font=("Helvetica", 12),
                         padx=2, pady=8, bg="lightblue", fg="red")
-        send_button.grid(row=3 + len(self.parameters), column=4, padx=8, pady=4)
+        send_button.grid(row=6 + len(self.parameters), column=1, columnspan=2, pady=20)
+        # Buttons for starting and stopping egram
+        regram_button = tk.Button(self, text="Request Egram", command=self.start_egram,
+                        relief="raised", bd=3, font=("Helvetica", 12),
+                        padx=2, pady=8, bg="lightblue", fg="red")
+        regram_button.grid(row=21,column=6, columnspan=2, pady=10)  
+        segram_button = tk.Button(self, text="Stop Egram", command=self.stop_egram,
+                        relief="raised", bd=3, font=("Helvetica", 12),
+                        padx=2, pady=8, bg="lightblue", fg="red")
+        segram_button.grid(row=21, column=8, columnspan=2, pady=10)
         
         for i, param in enumerate(self.parameters):         # Create Labels & Textbox's for inputting Parameter Values
             tk.Label(self, text=param, font=("Helvetica", 12, "bold")).grid(row=6+i, column=0, padx=5, pady=5, sticky="w")
@@ -459,32 +478,14 @@ class information_frame(ttk.Frame):
         parameter_values[param] = value                 # Store the validated parameter value
         save_parameters(user_id, parameter_values)      # If all parameters are valid, save them to the database
         print("Parameter values saved to database.")
-        
-    def create_egram_section(self):
-        #UI components for requesting and displaying egram data
-        ttk.Label(self, text="Egram Data").grid(row=20, column=0, pady=10)
 
-        # Buttons for starting and stopping egram
-        ttk.Button(self, text="Request Egram", command=self.start_egram).grid(row=21, column=0)
-        ttk.Button(self, text="Stop Egram", command=self.stop_egram).grid(row=21, column=1)
-
-        # Matplotlib figure for plotting egram data
-        self.fig, self.ax = plt.subplots(figsize=(6, 3))
-        self.ax.set_title("Egram Signals")
-        self.ax.set_xlabel("Time")
-        self.ax.set_ylabel("Signal")
-
-        # Embed the plot in Tkinter
-        self.canvas = FigureCanvasTkAgg(self.fig, self)
-        self.canvas.get_tk_widget().grid(row=22, column=0, columnspan=2)
-
-    '''def start_egram(self):
-        """
-        Start receiving egram data and update the plot in real-time.
-        """
-        self.master.comm.request_egram()
-        threading.Thread(target=self.master.comm.receive_egram_continuously, args=(self.update_egram_plot,), daemon=True).start()'''
-        
+        '''def start_egram(self):
+            """
+            Start receiving egram data and update the plot in real-time.
+            """
+            self.master.comm.request_egram()
+            threading.Thread(target=self.master.comm.receive_egram_continuously, args=(self.update_egram_plot,), daemon=True).start()'''
+            
     def start_egram(self):
         """
         Start receiving egram data and update the plot in real-time.
@@ -523,23 +524,23 @@ class information_frame(ttk.Frame):
         self.plot_running = True  # Control flag for the loop
 
         # Create an animation function
-        def update_plot(i):
-            if not self.plot_running:
-                raise StopIteration  # Exit the loop gracefully
+    def update_plot(i):
+        if not self.plot_running:
+            raise StopIteration  # Exit the loop gracefully
 
-            packet = self.master.comm.receive_packet()  # Read a packet
-            if packet:
-                egram_data = self.master.comm.parse_egram_data(packet)
-                if egram_data:
-                    self.egram_data.append(egram_data["v_raw"])  # Append new V raw value
-                    if len(self.egram_data) > 100:  # Keep the last 100 points
-                        self.egram_data.pop(0)
+        packet = self.master.comm.receive_packet()  # Read a packet
+        if packet:
+            egram_data = self.master.comm.parse_egram_data(packet)
+            if egram_data:
+                self.egram_data.append(egram_data["v_raw"])  # Append new V raw value
+                if len(self.egram_data) > 100:  # Keep the last 100 points
+                    self.egram_data.pop(0)
 
-            # Update the plot
-            self.ax.clear()
-            self.ax.plot(self.egram_data, label="Ventricular Raw Signal")
-            self.ax.legend()
-            self.canvas.draw()
+        # Update the plot
+        self.ax.clear()
+        self.ax.plot(self.egram_data, label="Ventricular Raw Signal")
+        self.ax.legend()
+        self.canvas.draw()
 
         # Start animation loop
         ani = animation.FuncAnimation(self.fig, update_plot, interval=100)  # Update every 100ms
