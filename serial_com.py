@@ -1,17 +1,26 @@
 import serial
 import struct
 import time
-import threading
-#import serial.tools.list_ports  #Used to check available com ports
-
+import serial.tools.list_ports  # Used to check available com ports
 
 class serialCommunication:
     def __init__(self, port = "COM3", baudrate = 57600, timeout = 1):
+        self.list_available_ports()   # Call list_available_ports to print available ports when object is created
         self.port = port
         self.baudrate = baudrate
         self.timeout = timeout
         self.ser = None
         self.data = [None] * 37 # List with 37 locations
+        
+    def list_available_ports(self):
+        """Prints all available serial ports for the user to choose from."""
+        ports = serial.tools.list_ports.comports()
+        if not ports:
+            print("No available serial ports were found.")
+        else:
+            print("Available serial ports: ")
+            for port, desc, hwid in sorted(ports):
+                print(f"{port}: {desc} (ID: {hwid})\n")
            
     def open_conn(self):
         try:

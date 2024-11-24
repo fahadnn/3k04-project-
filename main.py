@@ -19,7 +19,7 @@ class pacemaker(tk.Tk):
         create_db() #initialize user login info DB
         create_parameters_db() #User Programmable parameters info DB
         
-        self.comm = serialCommunication(port="COM3", baudrate=57600)
+        self.comm = serialCommunication()
         self.current_frame = None
         self.user_id = None  # Store the logged-in user ID to associate w/ parameters
         self.switch_frame(login_frame)
