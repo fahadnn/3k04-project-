@@ -1,7 +1,7 @@
 import string
 import threading
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, Canvas
 from userDB import create_db, register_user, verify_user
 from parameterDB import create_parameters_db, save_parameters, get_parameters
 from serial_com import serialCommunication 
@@ -229,13 +229,14 @@ class login_frame (ttk.Frame):
 class information_frame(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
-        self.comm = master.comm
+        #self.comm = master.comm
         self.data = [0] * 19             # data list of 19 elements [0] to [18]
         self.function_code = None           # function_code data byte 
         self.sync = 0x16                    # Sync byte is 0x16 or 22 in decimal
         self.comm_status_label = None       # Variable for Active/ Inactive text based on comm w/ pacemaker
         self.comm = serialCommunication()   # Init. Object of serialCommunication Class
         self.pacing_mode = 0                # Default pacing mode is 0 (no pacing) 
+        self.plot_running = False           #plot running flag
         #for egram-related elements
         self.egram_data = []
         self.selected_button = None
@@ -285,6 +286,9 @@ class information_frame(ttk.Frame):
         # Embed the plot in Tkinter
         self.canvas = FigureCanvasTkAgg(self.fig, self)
         self.canvas.get_tk_widget().grid(row=3, column=4, columnspan=20, rowspan=20)
+        # Create animation for the plot that will update every 100ms
+        self.ani = animation.FuncAnimation(self.fig, self.update_plot, interval=100, cache_frame_data=False)
+        #, save_count=MAX_FRAMES
         
         # Create Pacing Mode Buttons
         pacing_modes = ['AOO', 'VOO', 'AAI', 'VVI', 'AOOR', 'VOOR', 'AAIR', 'VVIR', 'DOOR', 'DDDR']
@@ -310,7 +314,13 @@ class information_frame(ttk.Frame):
                         relief="raised", bd=3, font=("Helvetica", 12),
                         padx=2, pady=8, bg="lightblue", fg="red")
         segram_button.grid(row=21, column=8, columnspan=2, pady=10)
-        
+        # Create logout Button
+        logout_button = tk.Button(self, text="Logout", 
+                                  command=lambda: self.master.switch_frame(login_frame),
+                                  relief="raised", bd=3, font=("Helvetica", 12),
+                                  padx=2, pady=8, bg="red", fg="blue")
+        logout_button.grid(row=21, column=15, columnspan=2, pady=20) 
+
         for i, param in enumerate(self.parameters):         # Create Labels & Textbox's for inputting Parameter Values
             tk.Label(self, text=param, font=("Helvetica", 12, "bold")).grid(row=6+i, column=0, padx=5, pady=5, sticky="w")
             entry = tk.Entry(self)
@@ -491,6 +501,7 @@ class information_frame(ttk.Frame):
         Start receiving egram data and update the plot in real-time.
         """
         self.comm.request_egram()  # Access comm directly
+        self.plot_running = True   # Control flag for the loop
         threading.Thread(
             target=self.comm.receive_egram_continuously,
             args=(self.update_egram_plot,),
@@ -501,62 +512,40 @@ class information_frame(ttk.Frame):
         """
         Stop receiving egram data.
         """
-        self.master.comm.stop_egram()
+        self.plot_running = False
+        self.comm.stop_egram()
 
-    def update_egram_plot(self, data):
+    def update_egram_plot(self, egram_data):
         """
-        Update the egram plot with new data.
+        Update the egram data, ensuring that only the latest data is used.
         """
-        self.egram_data.append(data["v_raw"])  # Append new V raw value
-        if len(self.egram_data) > 100:  # Keep the last 100 points
-            self.egram_data.pop(0)
+        if self.plot_running:
+            self.egram_data.append(egram_data["v_raw"]) # Append new V raw value
+            if len(self.egram_data) > 100:              # Keep the last 100 points
+                self.egram_data.pop(0)
+            self.canvas.after(0, self.update_plot) # Schedule the plot update on the main GUI thread (if using Tkinter)
         
-        self.ax.clear()
+    def update_plot(self, frame):  #update the plot with new egram data 
+        if not self.comm.is_connected:              # returns false if comport not open
+            print("Serial connection not open. Stopping animation.")
+            return None                             # Instead of raising StopIteration
+        self.ax.clear()                             # Update the plot  
+        self.ax.set_title("Egram Signals")
+        self.ax.set_xlabel("Time")
+        self.ax.set_ylabel("Signal")          
         self.ax.plot(self.egram_data, label="Ventricular Raw Signal")
         self.ax.legend()
-        self.canvas.draw()
-        
-    def plot_data(self):
-    #Continuously receive egram data and animate the plot.
-    
-        self.master.comm.request_egram()  # Request egram data
-        self.plot_running = True  # Control flag for the loop
-
-        # Create an animation function
-    def update_plot(i):
-        if not self.plot_running:
-            raise StopIteration  # Exit the loop gracefully
-
-        packet = self.master.comm.receive_packet()  # Read a packet
-        if packet:
-            egram_data = self.master.comm.parse_egram_data(packet)
-            if egram_data:
-                self.egram_data.append(egram_data["v_raw"])  # Append new V raw value
-                if len(self.egram_data) > 100:  # Keep the last 100 points
-                    self.egram_data.pop(0)
-
-        # Update the plot
-        self.ax.clear()
-        self.ax.plot(self.egram_data, label="Ventricular Raw Signal")
-        self.ax.legend()
-        self.canvas.draw()
-
-        # Start animation loop
-        ani = animation.FuncAnimation(self.fig, update_plot, interval=100)  # Update every 100ms
-        self.canvas.draw()
+        self.canvas.draw()      # Redraw the canvas to update the plot
 
     def stop_plot(self):
         """
         Stop receiving egram data and send the stop egram request.
         """
         self.plot_running = False  # Stop the plot loop
-        self.master.comm.stop_egram()  # Send the stop egram function code
+        self.comm.stop_egram()  # Send the stop egram function code
         print("Egram data reception stopped.")
-
-        
+ 
 if __name__ == "__main__":
     app = pacemaker()
     app.mainloop()
-
-    #perform error handling for if programmable parameter data enteres is out of range
     
