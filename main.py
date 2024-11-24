@@ -19,6 +19,7 @@ class pacemaker(tk.Tk):
         create_db() #initialize user login info DB
         create_parameters_db() #User Programmable parameters info DB
         
+        self.comm = serialCommunication(port="COM3", baudrate=57600)
         self.current_frame = None
         self.user_id = None  # Store the logged-in user ID to associate w/ parameters
         self.switch_frame(login_frame)
@@ -228,6 +229,7 @@ class login_frame (ttk.Frame):
 class information_frame(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
+        self.comm = master.comm
         self.data = [0] * 19             # data list of 19 elements [0] to [18]
         self.function_code = None           # function_code data byte 
         self.sync = 0x16                    # Sync byte is 0x16 or 22 in decimal
