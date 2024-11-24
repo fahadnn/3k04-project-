@@ -4,15 +4,14 @@ import tkinter as tk
 from tkinter import ttk
 from userDB import create_db, register_user, verify_user
 from parameterDB import create_parameters_db, save_parameters, get_parameters
-import sqlite3
-from serial_com import serialCommunication  # serial communication class is in serial_com.py
-
+from serial_com import serialCommunication 
 
 class pacemaker(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title ("Pacemaker")
-        self.geometry ("1000x800")
+        self.title ("Pacemaker GUI")
+        # Set the window size and position it at the top-left corner
+        self.geometry("1000x800+0+0")  # width=1200, height=800, X=0, Y=0
         
         create_db() #initialize user login info DB
         create_parameters_db() #User Programmable parameters info DB
@@ -136,10 +135,10 @@ class login_frame (ttk.Frame):
         self.grid_columnconfigure(1, weight=1)
         
         # Add labels, entries, and buttons with grid layout
-        ttk.Label(self, text="Welcome to DCM User Interface for Pacemaker").grid(row=0, column=0, columnspan=2, pady=10, padx=20, sticky="nsew")
-        ttk.Label(self, text="Username").grid(row=1, column=0, columnspan=2, pady=10)
-        ttk.Label(self, text="Password").grid(row=3, column=0, columnspan=2, pady=10)
-        
+        ttk.Label(self, text="Welcome to DCM User Interface for Pacemaker", foreground="red", font=("Helvetica", 22, "bold")).grid(row=0, column=0, columnspan=2, pady=10, padx=20, sticky="nsew")
+        ttk.Label(self, text="Username", foreground="red", font=("Helvetica", 14, "bold")).grid(row=1, column=0, columnspan=2, pady=10)
+        ttk.Label(self, text="Password", foreground="red", font=("Helvetica", 14, "bold")).grid(row=3, column=0, columnspan=2, pady=10)
+       
         # Language menu
         language_menu = tk.Menu(self, tearoff=0)
         languages = ["English", "Danish", "Dutch", "French", "German", "Spanish", "Italian", "Swedish"]
@@ -158,13 +157,30 @@ class login_frame (ttk.Frame):
         self.password_entry = ttk.Entry(self, show="*")
         self.password_entry.grid(row=4, column=0, columnspan=2, pady=10)
         
-        # Login and Register buttons
-        self.login_button = ttk.Button(self, text="Login", command=self.login_user)
+        # Create a Style object
+        self.style = ttk.Style()
+        
+        # Configure the style for Login Button (Red)
+        self.style.configure("Login.TButton",
+                             background="yellow",
+                             foreground="red",
+                             font=("Helvetica", 12, "bold"),
+                             padding=10)
+        
+        # Configure the style for Register Button (Yellow)
+        self.style.configure("Register.TButton",
+                             background="yellow",
+                             foreground="red",
+                             font=("Helvetica", 12, "bold"),
+                             padding=10)
+        
+        # Create Login Button
+        self.login_button = ttk.Button(self, text="Login", style="Login.TButton", command=self.login_user)
         self.login_button.grid(row=5, column=0, pady=20)
-
-         # Register button that switches to the registration frame
-        self.register_button = ttk.Button(self, text="Register", command=lambda: master.switch_frame(registration_frame))
-        self.register_button.grid(row=5, column=1, pady=20)
+        
+        # Create Register Button
+        self.register_button = ttk.Button(self, text="Register", style="Register.TButton", command=lambda: master.switch_frame(registration_frame))
+        self.register_button.grid(row=5, column=1, pady=20)        
         
         # Label to display login status (successful or unsuccessful)
         self.login_status = ttk.Label(self, text = " ")
@@ -209,297 +225,238 @@ class login_frame (ttk.Frame):
 class information_frame(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
-
+        self.data = [0] * 19             # data list of 19 elements [0] to [18]
+        self.function_code = None           # function_code data byte 
+        self.sync = 0x16                    # Sync byte is 0x16 or 22 in decimal
+        self.comm_status_label = None       # Variable for Active/ Inactive text based on comm w/ pacemaker
+        self.comm = serialCommunication()   # Init. Object of serialCommunication Class
+        self.pacing_mode = 0                # Default pacing mode is 0 (no pacing) 
         #for egram-related elements
         self.create_egram_selection()
         
         self.selected_button = None
         self.last_bg = None
-        self.pacing_mode = None #pacing mode selected
-        # Add a communication-status label (active/Inactive)
-        self.comm_status_label = ttk.Label(self, text="Inactive", foreground="red")
-        self.comm_status_label.grid(row=0, column=1, padx=10, pady=10)  # Position with grid
-        
-        # Create serial communication object
-        self.comm = serialCommunication(port='COM3', baudrate=57600)  # hardcoded for comport3
-
-        # Check if communication is active and update the label
-        self.update_comm_status()
-
-        # Data for parameter list
-        self.parameters = ['Pacing Mode', 'Hysteresis', 'Rate Smoothing', 'Reaction Time', 'Response Factor', 
+        # Names for Programmable Parameter list
+        self.parameters = ['Hysteresis', 'Rate Smoothing', 'Reaction Time', 'Response Factor', 
                            'Recovery Time', 'Lower Rate Limit', 'Upper Rate Limit', 'Max Sensor Rate', 'VRP', 'ARP', 
                            'PVARP', 'AV Amp Reg', 'AV Pulse Width', 'Atrial Sensitivity', 'Ventricular Sensitivity', ] 
-                          # 'Atrial Amplitude', 'Atrial Pulse Width', 
-                         #  'Ventricular Amplitude', 'Ventricular Pulse Width', 'AV Delay', ]
-        # Fetch existing values from the database or use defaults
-        self.values = self.fetch_existing_parameters()  # Fetch parameters from the database
-        self.entries = []  # To store Entry widgets
-        self.create_widgets()
+        self.values = self.fetch_existing_parameters()      # Fetch existing user values from the database or use defaults
+        self.entries = []                                   # To store Textbox in GUI
+        self.create_widgets()                               # Create GUI elements
+        self.update_comm_status()       # Check comm to update Comm Activity label
         
-    def update_comm_status(self):   #Method to check the communication status and update the label
-        if self.comm.is_connected():  #checks whether the serial communication is active
-            self.comm_status_label.config(text="Active", foreground="green")
+    def update_comm_status(self):       # Opens serial port then Check the communication status and updates the label
+        self.comm.open_conn()           # Open serial port
+        if (self.comm.is_connected()):  # returns True if connected
+            self.comm_status_label.config(text="Active", foreground="green", font=("Helvetica", 12, "bold"))  
         else:
-            self.comm_status_label.config(text="Inactive", foreground="red")
+            self.comm_status_label.config(text="Inactive", foreground="red", font=("Helvetica", 12, "bold"))
 
-#returns the existing parameter values for the user, or returns 1.0 for default value if none xists
-    def fetch_existing_parameters(self):
-            user_id = self.master.user_id  # Get the logged-in user ID
-            #error handling to check that user is logged in and user_id is working correctly
-            if user_id is None:
-                return "error, it appears that no user is logged in (user_id unavailable)" 
-
-            # Retrieve parameters from the database
-            existing_parameters = get_parameters(user_id)
-            if existing_parameters:
-                return [existing_parameters.get(param, 1.0) for param in self.parameters]
-            else:
-                return [1.0] * len(self.parameters)  # Default values if no parameters are found
+    def fetch_existing_parameters(self):   # returns the saved user parameter values, or defaults to 0
+        user_id = self.master.user_id  # Get the logged-in user ID
+        if user_id is None:            # Confirm that user is logged in & provided a user ID
+            return "error, it appears that no user is logged in (user_id unavailable)" 
+        existing_parameters = get_parameters(user_id)   # Retrieve parameters from the database
+        if existing_parameters:
+            return [existing_parameters.get(param, 0) for param in self.parameters]
+        else:
+            return [0] * len(self.parameters) 
         
     def create_widgets(self):
         # Labels
-        tk.Label(self, text="DCM Communication with Pacemaker:").grid(row=0, column=0, padx=10, pady=10, sticky="w")
-        tk.Label(self, text="Pacing Mode").grid(row=1, column=0, padx=10, pady=10, sticky="w")
-        tk.Label(self, text="Graph of Pacing Mode").grid(row=2, column=0, padx=10, pady=10, sticky="w")
-        tk.Label(self, text="Programmable Parameters").grid(row=5, column=0, padx=10, pady=10, sticky="w")
-
-        # Buttons
-        self.create_button('AOO', 1, 1)
-        self.create_button('VOO', 1, 2)
-        self.create_button('AAI', 1, 3)
-        self.create_button('VVI', 1, 4)
-        self.create_button('AOOR', 1, 5)
-        self.create_button('VOOR', 1, 6)
-        self.create_button('AAIR', 1, 7)
-        self.create_button('VVIR', 1, 8)
+        tk.Label(self, text="DCM Communication with Pacemaker: ", font=("Helvetica", 16, "bold")).grid(row=0, column=0, columnspan=4, padx=5, pady=5, sticky="w")        
+        self.comm_status_label = ttk.Label(self, text="Inactive", foreground="red", font=("Helvetica", 14, "bold")) # communication-status label
+        self.comm_status_label.grid(row=0, column=5, columnspan = 2, padx=10, pady=6)
+        tk.Label(self, text="Pacing Mode: ", font=("Helvetica", 14, "bold")).grid(row=1, column=0, columnspan=3, padx=2, pady=2)
+        tk.Label(self, text="Graph of Pacing Mode: ", font=("Helvetica", 14, "bold")).grid(row=2, column=3, columnspan=4, padx=2, pady=2)
+        ttk.Label(self, text="Programmable Parameters: ", foreground="red", font=("Helvetica", 14, "bold")).grid(row=5, column=0, columnspan=2, padx=2, pady=2, sticky="w")
         
-        # Entry widgets for parameters
-        for i, param in enumerate(self.parameters):
-            tk.Label(self, text=param).grid(row=6+i, column=0, padx=10, pady=5, sticky="w")
+        # Create Pacing Mode Buttons
+        pacing_modes = ['AOO', 'VOO', 'AAI', 'VVI', 'AOOR', 'VOOR', 'AAIR', 'VVIR', 'DOOR', 'DDDR']
+        for idx, mode in enumerate(pacing_modes):
+            self.create_button(mode, 1, idx + 4, width=5, height=1, font=("Helvetica", 12, "bold"), padx=1, pady=2)
+
+        # Save Button used to store values in the database
+        save_button = tk.Button(self, text="Save Values", command=self.save_values,
+                        relief="raised", bd=3, font=("Helvetica", 12),
+                        padx=2, pady=8, bg="lightblue", fg="red")
+        save_button.grid(row=8 + len(self.parameters), column=1, padx=8, pady=4)   
+        # Send_data button used to send packet of data, then ask for echo and receive the echo for confirmation
+        send_button = tk.Button(self, text="Send Data", command=self.send_values,
+                        relief="raised", bd=3, font=("Helvetica", 12),
+                        padx=2, pady=8, bg="lightblue", fg="red")
+        send_button.grid(row=8 + len(self.parameters), column=0, padx=8, pady=4)
+        
+        for i, param in enumerate(self.parameters):         # Create Labels & Textbox's for inputting Parameter Values
+            tk.Label(self, text=param, font=("Helvetica", 12, "bold")).grid(row=6+i, column=0, padx=5, pady=5, sticky="w")
             entry = tk.Entry(self)
-            entry.insert(0, str(self.values[i]))  # Set default value
-            entry.grid(row=6+i, column=1, padx=10, pady=5)
+            entry.insert(0, str(self.values[i]))            # Fill Textbox's with saved values for the user
+            entry.grid(row=6+i, column=1, padx=5, pady=5)
             self.entries.append(entry)
 
-        # Button to save values to the database
-        save_button = tk.Button(self, text="Save Values", command=self.save_values)
-        save_button.grid(row=6+len(self.parameters), column=0, columnspan=2, pady=10)
-
-    def create_button(self, text, row, col):
+    def create_button(self, text, row, col, width, height, font, padx, pady):    # Create pacing mode buttons to choose a mode
         button = tk.Button(
             self,
             text=text,
-            fg='black',
-            bg='lightgray',  # Default background color
+            width=width,
+            height=height,
+            font=font,
+            fg='red',
+            bg='lightgray',                       # Default background color
             activebackground='#B7E3F9',
             activeforeground='black',
             highlightthickness=0,
-            relief='raised',  # Make the button look more clickable
-            padx=10,  # Add some padding to make it larger
-            pady=5
+            relief='raised',                      # Make the button look more clickable
+            padx=padx,                            # Add some padding to make it larger
+            pady=pady
         )
-        button.grid(row=row, column=col, padx=5, pady=5)  # Use grid for button placement
-
+        button.grid(row=row, column=col)  # Use grid for button placement
         # Bind mouse enter and leave events for hover effect
         button.bind("<Enter>", lambda e: self.on_hover(button))
         button.bind("<Leave>", lambda e: self.on_leave(button))
-
         # use lambda fxn to capture text of the button when it is clicked
         button.config(command=lambda btn=button: self.change_selected_button(btn, text))
 
-# Change color only if the button is not selected, and its bg is not orange (selected button)
-    def on_hover(self, button):
+    def on_hover(self, button): # Highlight button if its not orange (most recently selected)
         if button != self.selected_button and (button.cget("background") != "orange") : 
             button.config(bg='skyblue')
-
-# Reset color only if the button is not selected and its bg is not orange (selected button)
-    def on_leave(self, button):
+    def on_leave(self, button): # Un-Highlight button if its not orange
         if button != self.selected_button and (button.cget("background") != "orange") : 
             button.config(bg='lightgray')
-
-#print a message when pacing mode is changed
-    def abc(self):
-        print("Pacing Mode Changed")
-
-#set communication with pacemaker status to inactive
-    def set_inactive(self): 
-        self.comm_status_label.config(text="Inactive", foreground="red")
-         
-    def change_selected_button(self, button, text):
-        self.abc()
-        if self.selected_button is not None:    #if button is clicked...
-            self.selected_button.config(bg="lightgray") #set previously clicked buttons bg to lightgray default
-            #set communication status with pacemaker to active when pacing mode button is pressed
-            
-        self.selected_button = button
-        button.config(bg="orange") #change selected buttons bg to orange
-        self.send_pacing_mode(text)
-        self.update_comm_status()
+    def abc(self):              # print a message when pacing mode is changed
+        print("Pacing Mode Changed") 
+    def change_selected_button(self, button, text):     # Change most recently selected button to orange
+        self.abc()                                      # print a message when pacing mode is changed
+        if self.selected_button is not None:            # if button is clicked...
+            self.selected_button.config(bg="lightgray") # set previously clicked buttons bg to gray default      
+        self.selected_button = button                   # Make recently clicked button the selected_button
+        button.config(bg="orange")                      # change selected_buttons bg to orange
+        self.set_pacing_mode(text)          # Pass text of recently clicked button
         
-    def send_pacing_mode(self, pacing_mode):    #send serial data depending on  pacing mode
-        # Map pacing modes to function codes or data
-        if pacing_mode == "AOO":
-            function_code = 0x01  # example function code
-            data = [1, 0, 0]  # example data for AOO mode
-            print("Pacing Mode Changed to AOO")
-        elif pacing_mode == "VOO":
-            function_code = 0x02
-            data = [0, 1, 0]
+    def set_pacing_mode(self, text):       # Map pacing modes to data list
+        if text == "VOO":
+            self.pacing_mode = 1  # mode = 1 for VOO
             print("Pacing Mode Changed to VOO")
-        elif pacing_mode == "AAI":
-            function_code = 0x03
-            data = [1, 1, 0]
-            print("Pacing Mode Changed to AAI")
-        elif pacing_mode == "VVI":
-            function_code = 0x04
-            data = [0, 0, 1]
+        elif text == "AOO":
+            self.pacing_mode = 2  # mode = 2 for AOO
+            print("Pacing Mode Changed to AOO")
+        elif text == "VVI":
+            self.pacing_mode = 3
             print("Pacing Mode Changed to VVI")
-        elif pacing_mode == "AOOR":
-            function_code = 0x05
-            data = [0, 1, 0]
+        elif text == "AAI":
+            self.pacing_mode = 4
+            print("Pacing Mode Changed to AAI")
+        elif text == "AOOR":
+            self.pacing_mode = 5
             print("Pacing Mode Changed to AOOR")
-        elif pacing_mode == "VOOR":
-            function_code = 0x06
-            data = [1, 1, 0]
+        elif text == "VOOR":
+            self.pacing_mode = 6
             print("Pacing Mode Changed to VOOR")
-        elif pacing_mode == "AAIR":
-            function_code = 0x07
-            data = [0, 0, 1]
+        elif text == "AAIR":
+            self.pacing_mode = 7
             print("Pacing Mode Changed to AAIR")
-        elif pacing_mode == "VVIR":
-            function_code = 0x08
-            data = [0, 0, 1]
+        elif text == "VVIR":
+            self.pacing_mode = 8
             print("Pacing Mode Changed to VVIR")
+        elif text == "DOOR":
+            self.pacing_mode = 9
+            print("Pacing Mode Changed to DOOR")
+        elif text == "DDDR":
+            self.pacing_mode = 10
+            print("Pacing Mode Changed to DDDR")
         else:
-            print(f"Unknown pacing mode: {pacing_mode}")
+            print(f"Unknown pacing mode. self.pacing_mode = {self.pacing_mode} ")
             return
-        self.comm.send_packet(function_code, data)  # Send packet using serialcommunication class
+        self.data[2] = self.pacing_mode
         
-    def save_values(self):
-        user_id = self.master.user_id  # Get the logged-in user ID
-        if user_id is None:
+    def send_values(self):     # Send & Echo 37 bit packet to pacemaker using serial_com methods
+        function_code = 0                   #send params (0x00 in hex) 
+        self.data[0] = 22                        #sync(0x16) is 22 in decimal
+        self.data[1] = function_code             #send parameter fxn code
+        self.data[2] = self.pacing_mode          #may already be set in set_pacing_mode
+        #                     19-5 = 14
+        for i in range ( (len(self.data)) - 5 ):     #fill data list from [3] to [35], [36] is checksum
+            self.data[i+3] = self.values[i]
+            print(self.data[i])
+        if (len(self.data) > 19):
+            print("Error in send_values data list has too many indices")
+            return
+        
+        self.comm.send_packet(function_code, self.data, self.pacing_mode)  # send packet to write parameters from dcm to pacemaker (function_code=0x00)
+        
+        function_code = 1                                # echo params (0x01 in hex)
+        self.data[1] = function_code                     # echo packet fxn code
+        self.comm.send_packet(function_code, self.data, self.pacing_mode)  # send packet to echo parameters from dcm to pacemaker (function_code=0x01)
+        self.comm.receive_packet()                       # receive back/print the echo of the params that were just sent
+        
+    def save_values(self):      # Save parameter values in GUI text box's to parameter database
+        user_id = self.master.user_id               # Get the logged in user's ID
+        if user_id is None:                         # Exit the method if user_id is invalid
             print("Error: No user is logged in.")
-            return  # Exit the method if user_id is invalid
+            return
         
-        parameter_values = {}
-        #validate each parameters value
-        for i, entry in enumerate(self.entries):
+        parameter_values = {}                       # create empty dictionary for parameter values
+        
+        for i, entry in enumerate(self.entries):    # validate each parameter entry in GUI textbox
             param = self.parameters[i]
             value = entry.get()
-            try:     # Attempt to convert the input to a float, handle invalid input
+            try:     # Attempt to convert the input to a float, handle invalid input by exiting save
                 value = float(value)
-              #  parameter_values[param] = float(value)  # Store each parameter and its value
-            except ValueError:  # if cant convert to float, give error
-                print(f"Invalid input for {param}: {value}")
-                return #exit if any parameter inputted is not able to convert to float
-            
-        # Check if the value is within the valid range for the parameter by comapre to dictionary
-        if param in PARAMETER_RANGES:
-            min_val, max_val = PARAMETER_RANGES[param]
-            
-            if isinstance(min_val, (int, float)) and isinstance(max_val, (int, float)):
-                if not (min_val <= value <= max_val):
-                    print(f"Error: {param} value {value} is out of range ({min_val}-{max_val})")
-                    return  # Prevent saving if value is out of range
-            elif isinstance(min_val, str) and isinstance(max_val, str):
-                # For categorical values (e.g., Pacing Mode)
-                if value not in [min_val, max_val]:
-                    print(f"Error: {param} value {value} is not valid. Must be one of {min_val}, {max_val}")
-                    return  # Prevent saving if value is invalid
-
-        parameter_values[param] = value  # Store the validated value
-
-        # If all parameters are valid, save them to the database
-        save_parameters(user_id, parameter_values)  # Save all parameters at once
-        print("Parameter values saved to database.")
-
-
-    PARAMETER_RANGES = {
-        'Pacing State': (0, 1),  # Example range (min, max)
-        'Pacing Mode': ('AOO', 'VOO'),  # no range needed for pacing modes bc change by button press
-        'Hysteresis': (0, 50),  # Assuming hysteresis is in percentage, 0-100%
-        'Rate Smoothing': (0, 25),  # 0-25%
-        'Reaction Time': (10, 50),  # msec
-        'Response Factor': (1, 16), 
-        'Recovery Time': (2, 16),   # minutes
-        'Lower Rate Limit': (30, 50),   # range from table 7 bpm
-        'Upper Rate Limit': (50, 175),  # Example for rate limit (bpm)
-        'Max Sensor Rate': (50, 175),   # ppm/bpm
-        'VRP': (150, 500),  # Ventricular refractory period range (ms)
-        'ARP': (150, 500),  # Atrial refractory period range (ms)
-        'PVARP': (150, 500),    #ms
-        'AV Amp Reg': (0, 7.0), #volts (off, 0.5-3.2v, 3.5-7.0v)
-        'AV Pulse Width': (0.1, 1.0),    #msec but diff values for a and V
-        'Atrial Sensitivity': (0.25, 0.75),  #0.25,0.5,0.75 mVolts
-        'Ventricular Sensitivity': (1.0, 10),    #1.0-10 mVolts
-        
-        
-        'Atrial Amplitude': (0, 10),  # Example for amplitude (volts)
-        'Atrial Pulse Width': (0, 10),  # Example for pulse width (ms)
-        'Ventricular Amplitude': (0, 10),  # Similar for ventricular
-        'Ventricular Pulse Width': (0, 10),
-        'AV Delay': (100, 300),  # AV delay range (ms)
-    }
-   
-        
-    '''    
-    def save_values(self):
-        user_id = self.master.user_id  # Get the logged-in user ID
-        
-        #check if user_id is available/not null
-        if user_id is None:
-            print("Error: No user is logged in.")
-            return  # Exit the method if user_id is invalid
-        
-        for i, entry in enumerate(self.entries):
-            param = self.parameters[i]
-            value = entry.get()
-            try:
-                save_parameter(user_id, param, float(value))
             except ValueError:
                 print(f"Invalid input for {param}: {value}")
-            except sqlite3.IntegrityError as e:
-                print(f"Database error: {e}")  # Handle the IntegrityError gracefully
+                return
+            if (i == 0) and (not (0 <= value <= 50)):           # Check if the value is within the valid range (50 <= value <= 125)
+                print(f"Error: '{param}' value '{value}' is out of the valid range (0-50). Please input a valid value before saving.")
+                return                                          # Prevent saving if value is out of the range
+            if (i == 1) and (not (0 <= value <= 25)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (0-25). Please input a valid value before saving.")
+                return
+            if (i == 2) and (not (10 <= value <= 50)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (10-50). Please input a valid value before saving.")
+                return
+            if (i == 3) and (not (1 <= value <= 16)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (1-16). Please input a valid value before saving.")
+                return
+            if (i == 4) and (not (2 <= value <= 16)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (2-16). Please input a valid value before saving.")
+                return
+            if (i == 5) and (not (30 <= value <= 50)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (30-50). Please input a valid value before saving.")
+                return
+            if (i == 6) and (not (50 <= value <= 175)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (50-175). Please input a valid value before saving.")
+                return
+            if (i == 7) and (not (50 <= value <= 175)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (50-175). Please input a valid value before saving.")
+                return
+            if (i == 8) and (not (150 <= value <= 500)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (150-500). Please input a valid value before saving.")
+                return
+            if (i == 9) and (not (150 <= value <= 500)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (150-500). Please input a valid value before saving.")
+                return
+            if (i == 10) and (not (150 <= value <= 500)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (150-500). Please input a valid value before saving.")
+                return
+            if (i == 11) and (not (0 <= value <= 7.0)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (0-7.0). Please input a valid value before saving.")
+                return    
+            if (i == 12) and (not (0.1 <= value <= 1.0)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (0.1-1.0). Please input a valid value before saving.")
+                return
+            if (i == 13) and (not (0.25 <= value <= 0.75)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (0.25-0.75). Please input a valid value before saving.")
+                return
+            if (i == 14) and (not (1.0 <= value <= 10)):         
+                print(f"Error: '{param}' value '{value}' is out of the valid range (1.0-10). Please input a valid value before saving.")
+                return
+            
+        parameter_values[param] = value                 # Store the validated parameter value
+        save_parameters(user_id, parameter_values)      # If all parameters are valid, save them to the database
         print("Parameter values saved to database.")
     '''       
-    
-    def create_egram_selection(self):
-        #UI components for requesting and displaying ergam data
-        
-        ttk.Label(self, text = "Egram Data").grid(row=20, column=0, pady=10) 
-        
-        #request egram button
-        self.request_eram_button = ttk.Button(self, text="Request Egram", command=self.start_egram)
-        self.request_eram_button.grid(row=21, column=0, pady=10)
-        
-        #stop egram button
-        self.stop_egram_button = ttk.Button(self, text="Stop Egram", command=self.stop_egram)
-        
-        #egram data disp.
-        self.egram_data_label = ttk.Label(self, text="Egram data here...")
-        self.egram_data_label.grid(row=22, column=0, columnspan=2)
-        
-    def start_egram(self):
-        #send request to start egram data transmission.
-        self.master.comm.request_egram()
-        threading.Thread(target=self.master.comm.receive_egram_continuously, args=(self.display_egram_data,), daemon=True).start()
-    def stop_egram(self):
-        
-        self.master.comm.stop_egram()
-        
-    def display_egram_data(self, data):
-        if data:
-            self.egram_data_label.config(text=f"V raw: {data['v_raw']}, F marker: {data['f_marker']}")
-        
-        
 if __name__ == "__main__":
     app = pacemaker()
     app.mainloop()
-    
-    
-    
-    #add save button for programmable parameters list - done
+
     #perform error handling for if programmable parameter data enteres is out of range
-    #make the pacing mode buttons more obvious that they are buttons - done
-    #add programmable parameters into the userDB database and attach to each user - done

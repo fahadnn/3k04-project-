@@ -14,34 +14,7 @@ def create_parameters_db():
     ''')
     conn.commit()
     conn.close()
-
-'''
-def save_parameter(user_id, parameter, value):
-    """Save a single parameter value for a user with retry mechanism."""
-    if user_id is None:
-        print("Error: user_id is None.")
-        return  # Handle this case appropriately
-
-    max_retries = 5
-    for attempt in range(max_retries):
-        try:
-            conn = sqlite3.connect('parameters.db', timeout=5)  # Set a timeout
-            cursor = conn.cursor()
-            
-            # Clear previous entries for this user before inserting new values
-            cursor.execute('DELETE FROM parameters WHERE user_id = ?', (user_id,))
-            cursor.execute('INSERT INTO parameters (user_id, parameter, value) VALUES (?, ?, ?)', (user_id, parameter, value))
-            conn.commit()
-            break  # Exit loop if successful
-        except sqlite3.OperationalError as e:
-            print(f"Attempt {attempt + 1}: {e}")
-            time.sleep(0.1)  # Wait a moment before retrying
-        except sqlite3.IntegrityError as e:
-            print(f"IntegrityError: {e}")
-            break  # Exit loop if there is an integrity error
-        finally:
-            conn.close()  # Ensure connection is closed even if an error occurs
-'''            
+             
 # save all the parameters in the DB
 def save_parameters(user_id, parameter_values):
     """Save multiple parameter values for a user."""
