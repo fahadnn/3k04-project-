@@ -14,7 +14,7 @@ class pacemaker(tk.Tk):
         super().__init__()
         self.title ("Pacemaker GUI")
         # Set the window size and position it at the top-left corner
-        self.geometry("1100x750+0+0")  # width=1200, height=800, X=0, Y=0
+        self.geometry("1100x725+0+0")  # width=1200, height=800, X=0, Y=0
         
         create_db() #initialize user login info DB
         create_parameters_db() #User Programmable parameters info DB
@@ -267,33 +267,29 @@ class information_frame(ttk.Frame):
         else:
             return [0] * len(self.parameters) 
         
-    def create_widgets(self):
-        # Labels
+    def create_widgets(self):   # ALL of the GUI Elements for Pacing Info Page Declared Here
         tk.Label(self, text="DCM Communication with Pacemaker: ", font=("Helvetica", 16, "bold")).grid(row=0, column=0, columnspan=4, padx=5, pady=5, sticky="w")        
         self.comm_status_label = ttk.Label(self, text="Inactive", foreground="red", font=("Helvetica", 14, "bold")) # communication-status label
-        self.comm_status_label.grid(row=0, column=5, columnspan = 2, padx=10, pady=6)
-        tk.Label(self, text="Pacing Mode: ", font=("Helvetica", 14, "bold")).grid(row=1, column=0, columnspan=3, padx=2, pady=2)
-        tk.Label(self, text="Graph of Pacing Mode: ", font=("Helvetica", 14, "bold")).grid(row=2, column=3, columnspan=4, padx=2, pady=2)
-        ttk.Label(self, text="Programmable Parameters: ", foreground="red", font=("Helvetica", 14, "bold")).grid(row=5, column=0, columnspan=2, padx=2, pady=2, sticky="w")
-        #UI components for requesting and displaying egram data
-        ttk.Label(self, text="Egram Data").grid(row=20, column=0, pady=10)
-
+        self.comm_status_label.grid(row=0, column=4, columnspan = 2, padx=10, pady=5)
+        ttk.Label(self, text="Pacing Mode Buttons: ", foreground="#FF0000",  font=("Helvetica", 14, "bold")).grid(row=1, column=0, columnspan=2, rowspan=1, padx=5, pady=5)
+        ttk.Label(self, text="Graph of Live Egram Data: ", foreground="#FF0000", font=("Helvetica", 14, "bold")).grid(row=5, column=4, columnspan=4, rowspan=1, padx=5, pady=5)
+        ttk.Label(self, text="Programmable Parameters: ", foreground="red", font=("Helvetica", 14, "bold")).grid(row=5, column=0, columnspan=2, rowspan=1, padx=5, pady=5, sticky="w")
+        ttk.Label(self, text="| Model Number: 1.0 | Version: 2.0 | SN: 20241125 | Institution: McMaster University |", foreground="darkorange", font=("Helvetica", 9, "bold")).grid(row=0, column=7, columnspan=10, padx=5, pady=5, sticky="w")
+        
         # Matplotlib figure for plotting egram data
-        self.fig, self.ax = plt.subplots(figsize=(6, 4))
+        self.fig, self.ax = plt.subplots(figsize=(6, 5))        
         self.ax.set_title("Egram Signals")
         self.ax.set_xlabel("Time")
         self.ax.set_ylabel("Signal")
-        # Embed the plot in Tkinter
-        self.canvas = FigureCanvasTkAgg(self.fig, self)
-        self.canvas.get_tk_widget().grid(row=3, column=4, columnspan=20, rowspan=20)
+        self.canvas = FigureCanvasTkAgg(self.fig, self)         # Embed the plot in Tkinter
+        self.canvas.get_tk_widget().grid(row=3, column=3, columnspan=10, rowspan=20)
         # Create animation for the plot that will update every 100ms
         self.ani = animation.FuncAnimation(self.fig, self.update_plot, interval=100, cache_frame_data=False)
-        #, save_count=MAX_FRAMES
         
         # Create Pacing Mode Buttons
         pacing_modes = ['AOO', 'VOO', 'AAI', 'VVI', 'AOOR', 'VOOR', 'AAIR', 'VVIR', 'DOOR', 'DDDR']
         for idx, mode in enumerate(pacing_modes):
-            self.create_button(mode, 1, idx + 4, width=5, height=1, font=("Helvetica", 12, "bold"), padx=1, pady=2)
+            self.create_button(mode, 1, idx + 4, width=5, height=1, font=("Helvetica", 12, "bold"), padx=5, pady=2)
 
         # Save Button used to store values in the database
         save_button = tk.Button(self, text="Save Values", command=self.save_values,
@@ -314,21 +310,27 @@ class information_frame(ttk.Frame):
                         relief="raised", bd=3, font=("Helvetica", 12),
                         padx=2, pady=8, bg="lightblue", fg="red")
         segram_button.grid(row=21, column=8, columnspan=2, pady=10)
-        # Create logout Button
+        # Logout Button
         logout_button = tk.Button(self, text="Logout", 
-                                  command=lambda: self.master.switch_frame(login_frame),
+                                  command=lambda: self.logout(),
                                   relief="raised", bd=3, font=("Helvetica", 12),
-                                  padx=2, pady=8, bg="red", fg="blue")
-        logout_button.grid(row=21, column=15, columnspan=2, pady=20) 
-
-        for i, param in enumerate(self.parameters):         # Create Labels & Textbox's for inputting Parameter Values
+                                  padx=5, pady=5, bg="red", fg="blue")
+        logout_button.grid(row=21, column=13, columnspan=2, pady=20) 
+        # Create Labels & Textbox's for inputting Parameter Values
+        for i, param in enumerate(self.parameters):   
             tk.Label(self, text=param, font=("Helvetica", 12, "bold")).grid(row=6+i, column=0, padx=5, pady=5, sticky="w")
             entry = tk.Entry(self)
-            entry.insert(0, str(self.values[i]))            # Fill Textbox's with saved values for the user
+            entry.insert(0, str(self.values[i]))         # Convert self.values list data to string in entry list
             entry.grid(row=6+i, column=1, padx=5, pady=5)
-            self.entries.append(entry)
+            self.entries.append(entry)                   # Fill Textbox's with saved values for the user
 
-    def create_button(self, text, row, col, width, height, font, padx, pady):    # Create pacing mode buttons to choose a mode
+    def logout(self):                         # Handle logout by closing COMport & switching to login_frame 
+        if (self.comm.is_connected()):        # Close the COMport if active       
+            self.comm.close_conn()   
+        self.master.switch_frame(login_frame) # Switch to login_frame
+        
+    # Used to create GUI pacing mode buttons w/ highlight functionality in create_widgets()  
+    def create_button(self, text, row, col, width, height, font, padx, pady): 
         button = tk.Button(
             self,
             text=text,
@@ -348,9 +350,8 @@ class information_frame(ttk.Frame):
         # Bind mouse enter and leave events for hover effect
         button.bind("<Enter>", lambda e: self.on_hover(button))
         button.bind("<Leave>", lambda e: self.on_leave(button))
-        # use lambda fxn to capture text of the button when it is clicked
+        # use lambda function to capture text of the button when it is clicked
         button.config(command=lambda btn=button: self.change_selected_button(btn, text))
-
     def on_hover(self, button): # Highlight button if its not orange (most recently selected)
         if button != self.selected_button and (button.cget("background") != "orange") : 
             button.config(bg='skyblue')
