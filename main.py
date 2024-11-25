@@ -490,13 +490,6 @@ class information_frame(ttk.Frame):
         save_parameters(user_id, parameter_values)      # If all parameters are valid, save them to the database
         print("Parameter values saved to database.")
 
-        '''def start_egram(self):
-            """
-            Start receiving egram data and update the plot in real-time.
-            """
-            self.master.comm.request_egram()
-            threading.Thread(target=self.master.comm.receive_egram_continuously, args=(self.update_egram_plot,), daemon=True).start()'''
-            
     def start_egram(self):
         """
         Start receiving egram data and update the plot in real-time.
@@ -508,20 +501,14 @@ class information_frame(ttk.Frame):
             args=(self.update_egram_plot,),
             daemon=True,
         ).start()
-    
-    def stop_egram(self):
-        """
-        Stop receiving egram data.
-        """
-        self.plot_running = False
-        self.comm.stop_egram()
 
     def update_egram_plot(self, egram_data):
         """
         Update the egram data, ensuring that only the latest data is used.
         """
+        v_raw = egram_data[0]
         if self.plot_running:
-            self.egram_data.append(egram_data["v_raw"]) # Append new V raw value
+            self.egram_data.append(self.comm.v_raw) # Append new V raw value
             if len(self.egram_data) > 100:              # Keep the last 100 points
                 self.egram_data.pop(0)
             self.canvas.after(0, self.update_plot) # Schedule the plot update on the main GUI thread (if using Tkinter)
@@ -529,7 +516,9 @@ class information_frame(ttk.Frame):
     def update_plot(self, frame):  #update the plot with new egram data 
         if not self.comm.is_connected:              # returns false if comport not open
             print("Serial connection not open. Stopping animation.")
-            return None                             # Instead of raising StopIteration
+            return None
+        
+        # Instead of raising StopIteration
         self.ax.clear()                             # Update the plot  
         self.ax.set_title("Egram Signals")
         self.ax.set_xlabel("Time")
@@ -545,6 +534,13 @@ class information_frame(ttk.Frame):
         self.plot_running = False  # Stop the plot loop
         self.comm.stop_egram()  # Send the stop egram function code
         print("Egram data reception stopped.")
+        
+    def stop_egram(self):
+        """
+        Stop receiving egram data.
+        """
+        self.plot_running = False
+        self.comm.stop_egram()
  
 if __name__ == "__main__":
     app = pacemaker()

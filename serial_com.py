@@ -12,6 +12,8 @@ class serialCommunication:
         self.timeout = timeout
         self.ser = None
         self.data = [None] * 37 # List with 37 locations
+        self.egram_data = [None] * 37
+        self.v_raw = []
         
     def list_available_ports(self):
         """Prints all available serial ports for the user to choose from."""
@@ -90,7 +92,7 @@ class serialCommunication:
             packet += struct.pack('B', checksum)
             return packet
         
-    def create_egram_packet(function_code, egram_data, f_marker):
+    def create_egram_packet(self, function_code, egram_data, f_marker):
         sync = 0x16
         v_raw = 0x0000
         epacket = struct.pack('B', sync) #pack sync as 1 byte
@@ -131,7 +133,28 @@ class serialCommunication:
         print(f"Sent Parameters packet: {packet}")
         #self.close_conn()
 
-    def receive_packet(self):       # Used to receive the 37 byte packet(s) from Simulink
+    def receive_epacket(self):    # Used to receive the 37 byte egram data packet(s) from Simulink
+        if not self.ser or not self.ser.is_open:
+            self.open_conn()
+            
+        if self.ser is None or not self.ser.is_open:
+            print("Failed to open serial connection. Cannot receive packet.")
+            return None
+
+        packet = self.ser.read(37) #37 bytes in a single packet transmission
+        if len(packet) < 37:
+            print("Invalid packet received")
+            return None 
+        
+        self.sync, function_code = struct.unpack('BB', packet[:2])  # Unpack sync(0x16) & FxnCode(bytes1&2, Packet[0&1])
+        data = struct.unpack('34B', packet[2:-1])                   # Data goes from index 2 -> index 36
+        data = struct.unpack('B', packet[36:37])                    # Unpack checksum byte index 36 (last position)
+        checksum = packet[-1:]
+        data = struct.unpack('B', checksum)                 # expects bytes-like object like bytes, slice, bytes array
+    
+    
+    
+    def receive_packet(self):       # Used to receive the 37 byte parameters packet(s) from Simulink
         if not self.ser or not self.ser.is_open:
             self.open_conn()
             
@@ -199,13 +222,15 @@ class serialCommunication:
         print("Sent stop egram request to pacemaker")
         
     def parse_egram_data(self, packet):
-        #Parse egram data received from the pacemaker
-        if len(packet) < 6:
+        # Parse egram data packet received from the pacemaker
+        if len(packet) < 37:
             print("Invalid egram packet received")
             return None
         
-        sync,fn_code = struct.unpack('BB', packet[:2]) 
-        v_raw, f_marker = struct.unpack('HH', packet[2:6])
+        sync = struct.unpack('B', packet[:1]) 
+        fn_code = struct.unpack('B', packet[1:2])
+        v_raw = struct.unpack('d', packet[2:4])
+        f_marker = struct.unpack('H', packet[4:6])
         checksum_received = packet[-1] 
         
         calculated_checksum = self.checksum(packet[:-1])    # Checksum excluding the checksum byte
@@ -213,7 +238,7 @@ class serialCommunication:
             print("Invalid checksum for egram packet")
             return None
         
-        return {"v_raw": v_raw, "f_marker": f_marker}
+        return v_raw, f_marker
     
     def receive_egram_continuously(self, callback):
         #continuously receive egram data and call the callback function to update the GUI
@@ -231,9 +256,9 @@ class serialCommunication:
             while True:
                 packet = self.receive_packet()
                 if packet:
-                    egram_data = self.parse_egram_data(packet)
-                    if egram_data:
-                        callback(egram_data) #pass data to callack func
+                    self.v_raw = self.parse_egram_data(packet)
+                    if self.v_raw:
+                        callback(self.v_raw) #pass data to callack func
                 time.sleep(0.1)
         except KeyboardInterrupt:
             print("Egram reception interrupeted") 
