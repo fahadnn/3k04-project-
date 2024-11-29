@@ -486,9 +486,9 @@ class information_frame(ttk.Frame):
                 print(f"Error: '{param}' value '{value}' is out of the valid range (1.0-10). Please input a valid value before saving.")
                 return
             
-        parameter_values[param] = value                 # Store the validated parameter value
-        save_parameters(user_id, parameter_values)      # If all parameters are valid, save them to the database
-        print("Parameter values saved to database.")
+            parameter_values[param] = value                 # Store the validated parameter value
+            save_parameters(user_id, parameter_values)      # If all parameters are valid, save them to the database
+            print("Parameter values saved to database.")
 
     def start_egram(self):
         """
